@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -392,22 +392,43 @@ public class RadiusClient implements RadiusValues
             // perform the XOR as specified by RFC 2865.
             encryptedPass[i] = (byte)(bn[i] ^ encryptedPass[i]);
         }
+
         if (encryptedPass.length > 16){
             for (int i = 16; i < encryptedPass.length; i+=16){
                 this.md5MessageDigest.reset();
                 // add the shared secret
                 this.md5MessageDigest.update(this.sharedSecret.getBytes());
-                //add the next 16 bytes of the user password (at this point they are unencrypted)
-                this.md5MessageDigest.update(encryptedPass, i, i+16);
+                //add the previous(encrypted) 16 bytes of the user password
+                this.md5MessageDigest.update(encryptedPass, i - 16, 16);
                 // get the md5 hash( bn = MD5(S + c(i-1)) ).
                 bn = this.md5MessageDigest.digest();
-                for (int j = 0; i < 16; j++) {
+                for (int j = 0; j < 16; j++) {
                     // perform the XOR as specified by RFC 2865.
                     encryptedPass[i+j] = (byte)(bn[j] ^ encryptedPass[i+j]);
                 }
             }
         }
         return encryptedPass;
+    }
+    private void  printByteArray(byte[] byteArray){
+        System.out.print("byte array = |");
+        for (int i = 0; i <byteArray.length;i++){
+            System.out.print(Byte.toString(byteArray[i]) + "\t");
+        }
+        System.out.println("|");
+    }
+    private byte[] bytecopy(byte[] src, int offset, int length) throws InvalidParameterException{
+        int diff = (src.length - offset);
+        if (diff < 0){
+            throw new InvalidParameterException("Cannot specify an offset beyond the end of the array!");
+        }else if (diff < length){
+            throw new InvalidParameterException("Asking me copy from beyond the end of the array, fix either your offset or length argument! diff = "+ diff);
+        }
+        byte[] dest = new byte[length];
+        for (int i = offset, j=0; i < src.length && j < length; i++,j++) {
+            dest[j] = src[i];
+        }
+        return dest;
     }
     /**
      * This method builds a Request Authenticator for use in outgoing RADIUS
