@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -105,6 +105,7 @@ public class RadiusPacket {
         if (null == radiusAttribute){
             throw new InvalidParameterException("radiusAttribute was null");
         }
+        validateAttribute(tempRa);
         synchronized(this.attributes){
             this.attributes.put(new Integer(radiusAttribute.getType()),radiusAttribute);
         }
@@ -114,7 +115,7 @@ public class RadiusPacket {
      * @param attributeList a list of RadiusAttribute objects to add to this RadiusPacket
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
-    public void setAttributes(List attributeList) throws InvalidParameterException{
+    public void setAttributes(final List attributeList) throws InvalidParameterException{
         if(null == attributeList){
             throw new InvalidParameterException("Attribute List was null");
         }
@@ -123,6 +124,7 @@ public class RadiusPacket {
         while(iter.hasNext()){
             try{
                 tempRa = (RadiusAttribute)iter.next();
+                validateAttribute(tempRa);
             }catch(ClassCastException ccex){
                 throw new InvalidParameterException("Attribute List contained an entry that was not a net.sourceforge.jradiusclient.RadiusAttribute");
             }
@@ -130,6 +132,12 @@ public class RadiusPacket {
                 this.attributes.put(new Integer(tempRa.getType()),tempRa);
             }
         }
+    }
+    //do nothing method, sub-classes should implement to get attributes validation during
+    // the setAttribute and setAttributes methods
+    protected void validateAttribute(final RadiusAttribute attribute)
+    throws InvalidParameterException{
+
     }
     /**
      * retrieve a RadiusAttribute from this RadiusPacket
