@@ -7,9 +7,10 @@ import java.security.SecureRandom;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
-public class ChapUtil {   
+public class ChapUtil {
+    public static final int DEFAULT_CHALLENGE_SIZE = 16;
     private SecureRandom srand = null;
     /**
      * 
@@ -20,7 +21,7 @@ public class ChapUtil {
     }
     /**
      * 
-     * @return
+     * @return  a random byte to use as a chap Identifier
      */
     public byte getNextChapIdentifier(){
         synchronized (this.srand){
@@ -28,9 +29,12 @@ public class ChapUtil {
         }
     }
     /**
-     * 
-     * @param size
-     * @return
+     * Get a fixed number of bytes to use as a chap challenge, generally you don't want this to 
+     * be less than the number of bytes outbut by the hash algoritm to be used to encrypt the 
+     * password, in this case 16 since Radius rfc 2865 section 2.2 specifies MD5 if size is <1
+     * we will use the default of 16
+     * @param size number of bytes the challenge will be
+     * @return suze bytes of random data to use as a chapchallenge
      */
     public byte[] getNextChapChallenge(final int size){
         byte[] challenge = new byte[size];

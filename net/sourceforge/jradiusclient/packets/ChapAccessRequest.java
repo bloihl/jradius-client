@@ -12,10 +12,9 @@ import net.sourceforge.jradiusclient.util.ChapUtil;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class ChapAccessRequest extends RadiusPacket {
-    private static final int DEFAULT_CHALLENGE_SIZE = 16;
     private static final ChapUtil chapUtil = new ChapUtil();
     private boolean initialized = false;
     /**
@@ -39,7 +38,7 @@ public class ChapAccessRequest extends RadiusPacket {
      */
     public ChapAccessRequest(final String userName, final String plaintextPassword )
             throws InvalidParameterException{
-        this(userName, plaintextPassword.getBytes(), DEFAULT_CHALLENGE_SIZE);
+        this(userName, plaintextPassword.getBytes(), ChapUtil.DEFAULT_CHALLENGE_SIZE);
     }
     /**
      * 
@@ -49,7 +48,7 @@ public class ChapAccessRequest extends RadiusPacket {
      */
     public ChapAccessRequest(final String userName, final byte[] plaintextPassword)
             throws InvalidParameterException{
-        this(userName, plaintextPassword, DEFAULT_CHALLENGE_SIZE);
+        this(userName, plaintextPassword, ChapUtil.DEFAULT_CHALLENGE_SIZE);
     }
     /**
      * 
