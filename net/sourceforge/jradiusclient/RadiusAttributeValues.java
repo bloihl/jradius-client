@@ -10,11 +10,11 @@ package net.sourceforge.jradiusclient;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
-public interface RadiusAttributeValues
+public final class RadiusAttributeValues
 {
-    /* ******************  Constant Attribute Types  *************************/
+/* ******************  Constant Attribute Types  *************************/
     public static final int USER_NAME       		= 1;
     public static final int USER_PASSWORD   		= 2;
     public static final int CHAP_PASSWORD			= 3;
@@ -31,11 +31,11 @@ public interface RadiusAttributeValues
     public static final int LOGIN_IP_HOST			= 14;
     public static final int LOGIN_SERVICE			= 15;
     public static final int LOGIN_TCP_PORT			= 16;
-                                //17      (unassigned)
+    //17      (unassigned)
     public static final int REPLY_MESSAGE			= 18;
     public static final int CALLBACK_NUMBER			= 19;
     public static final int CALLBACK_ID			    = 20;
-                                //21      (unassigned)
+    //21      (unassigned)
     public static final int FRAMED_ROUTE			= 22;
     public static final int FRAMED_IPX_NETWORK		= 23;
     public static final int STATE				    = 24;
@@ -55,7 +55,7 @@ public interface RadiusAttributeValues
     public static final int FRAMED_APPLETALK_NETWORK	= 38;
     public static final int FRAMED_APPLETALK_ZONE		= 39;
 
-    //40_59   (reserved for accounting)
+//40_59   (reserved for accounting)
     public static final int ACCT_STATUS_TYPE		= 40;
     public static final int ACCT_DELAY_TIME			= 41;
     public static final int ACCT_INPUT_OCTETS		= 42;
@@ -92,10 +92,10 @@ public interface RadiusAttributeValues
     public static final int ACCT_INTERIM_INTERVAL		= 85;
     public static final int NAS_PORT_ID			= 87;
     public static final int FRAMED_POOL			= 88;
-    /* *******************  Constant Attribute Types  **************************/
+/* *******************  Constant Attribute Types  **************************/
 
-    /* ******************  Constant Attribute Values  *************************/
-    // Service-Type or User Types
+/* ******************  Constant Attribute Values  *************************/
+// Service-Type or User Types
     public static final int LOGIN				=  1;
     public static final int FRAMED				=  2;
     public static final int CALLBACK_LOGIN		=  3;
@@ -108,7 +108,7 @@ public interface RadiusAttributeValues
     public static final int Call_CHECK			= 10;
     public static final int CALLBACK_ADMINISTRATIVE	= 11;
 
-    // Framed-Protocol
+// Framed-Protocol
     public static final int PPP					= 1;
     public static final int SLIP				= 2;
     public static final int ARAP				= 3;
@@ -116,19 +116,19 @@ public interface RadiusAttributeValues
     public static final int XYLOGICS_PROPRIETARY_IPX_SLIP	= 5;
     public static final int X75_SYNCHRONOUS		= 6;
 
-    // Framed-Routing
+// Framed-Routing
     public static final int NONE		        = 0;
     public static final int BROADCAST		    = 1;
     public static final int LISTEN			    = 2;
     public static final int BROADCAST_LISTEN	= 3;
 
-    // Framed-Compression
-    //public static final int None					= 0;
+// Framed-Compression
+//public static final int None					= 0;
     public static final int VJ_TCP_IP_HEADER_COMPRESSION	= 1;
     public static final int IPX_HEADER_COMPRESSION		    = 2;
     public static final int STAC_LZS_COMPRESSION			= 3;
 
-    // Login-Service
+// Login-Service
     public static final int TELNET			= 0;
     public static final int RLOGIN			= 1;
     public static final int TCP_CLEAR		= 2;
@@ -138,11 +138,11 @@ public interface RadiusAttributeValues
     public static final int X25_T3POS		= 7;
     public static final int TCP_CLEAR_QUIET	= 8;
 
-    // Termination-Action
+// Termination-Action
     public static final int DEFAULT		    = 0;
     public static final int RADIUS_REQUEST	= 1;
 
-    // NAS-PORT-TYPE
+// NAS-PORT-TYPE
     public static final int ASYNC			=  0;
     public static final int SYNC			=  1;
     public static final int ISDN_SYNC		=  2;
@@ -164,25 +164,27 @@ public interface RadiusAttributeValues
     public static final int WIRELESS_OTHER	= 18;
     public static final int WIRELESS_IEEE_802_11	= 19;
 
-    /* ******************    Constant Attribute Values  *************************/
-    /* *****************  Attributes and sub attributes for SIP ***************/
+/* ******************    Constant Attribute Values  *************************/
+/* *****************  Attributes and sub attributes for SIP ***************/
 
-     // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
-     public static final int DIGEST_RESPONSE         = 206;
-     public static final int DIGEST_ATTRIBUTE        = 207;
+    // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
+    public static final int DIGEST_RESPONSE         = 206;
+    public static final int DIGEST_ATTRIBUTE        = 207;
 
 
-     // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
-     public static final int SIP_REALM                   = 1;
-     public static final int SIP_NONCE                   = 2;
-     public static final int SIP_METHOD                  = 3;
-     public static final int SIP_URI                     = 4;
-     public static final int SIP_QOP                     = 5;
-     public static final int SIP_ALGORITHM               = 6;
-     public static final int SIP_BODY_DIGEST             = 7;
-     public static final int SIP_CNONCE                  = 8;
-     public static final int SIP_NONCE_COUNT             = 9;
-     public static final int SIP_USER_NAME               = 10;
+    // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
+    public static final int SIP_REALM                   = 1;
+    public static final int SIP_NONCE                   = 2;
+    public static final int SIP_METHOD                  = 3;
+    public static final int SIP_URI                     = 4;
+    public static final int SIP_QOP                     = 5;
+    public static final int SIP_ALGORITHM               = 6;
+    public static final int SIP_BODY_DIGEST             = 7;
+    public static final int SIP_CNONCE                  = 8;
+    public static final int SIP_NONCE_COUNT             = 9;
+    public static final int SIP_USER_NAME               = 10;
    /* *****************  Attributes and sub attributes for SIP ***************/
-
+   /* ***************** HELPER METHODS ********************** */
+   //public static String getTypeName(final int type){
+   //}
 }

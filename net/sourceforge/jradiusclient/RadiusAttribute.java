@@ -5,14 +5,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 /**
  * Released under the LGPL<BR>
+ * The most basic representation of an attribute to be used in the request attributes
+ * section of the outgoing RadiusPackets. (see known direct known subclasses)
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
-public class RadiusAttribute implements RadiusAttributeValues{
+public class RadiusAttribute {
     private static final int HEADER_LENGTH = 2;
     private byte[] packetBytes;
     /**
      * Construct a basic RadiusAttribute
+     * @param type - the type of this attribute see RadiusAttributeValues class for possible types
+     * @param value - the byte array representation of a specific value for this instance.
      * @throws InvalidParameterException if the type is not a valid Radius Attribute Type see RFCs 2865 and 2866
      */
     public RadiusAttribute(final int type, final byte[] value) throws InvalidParameterException {
