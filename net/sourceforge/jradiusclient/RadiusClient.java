@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -75,7 +75,6 @@ public class RadiusClient implements RadiusValues
      * @param hostname java.lang.String
      * @param sharedSecret java.lang.String
      * @param userName java.lang.String
-     * @param useCHAP boolean Use CHAP protocol to encrypt Password, false indicates PAP password usage
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
      *                              instance of the MD5 algorithm.
@@ -131,10 +130,9 @@ public class RadiusClient implements RadiusValues
         this.setHostname(hostname);
         this.setUserName(userName);
         this.setSharedSecret(sharedSecret);
-        this.setTimeout(sockTimeout);
         //set up the socket for this client
         this.socket = new DatagramSocket();
-        this.socket.setSoTimeout(this.socketTimeout);
+        this.setTimeout(sockTimeout);
         //set up the md5 engine
         this.md5MessageDigest = MessageDigest.getInstance("MD5");
         this.setAuthPort(authPort);
@@ -678,6 +676,9 @@ public class RadiusClient implements RadiusValues
         }else{//everything is a-ok
             this.socketTimeout = socket_timeout;
 	    try{
+		if(null == this.socket) {//prevent NPE
+		    this.socket = new Socket();
+		}
 		this.socket.setSoTimeout(this.socketTimeout);
 	    }catch(SocketException sex){}
         }
