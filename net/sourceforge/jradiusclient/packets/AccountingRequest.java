@@ -1,5 +1,7 @@
 package net.sourceforge.jradiusclient.packets;
 
+import net.sourceforge.jradiusclient.attributes.AcctSessionIdAttribute;
+import net.sourceforge.jradiusclient.attributes.AcctStatusTypeAttribute;
 import net.sourceforge.jradiusclient.attributes.ServiceTypeAttribute;
 import net.sourceforge.jradiusclient.attributes.UserNameAttribute;
 import net.sourceforge.jradiusclient.RadiusAttribute;
@@ -10,15 +12,23 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class AccountingRequest extends RadiusPacket {
     private boolean initialized = false;
-    public AccountingRequest(final String userName, final byte[] serviceType )
+    /**
+     * construct an account request packet for this session
+     * @param userName
+     * @param serviceType
+     * @throws InvalidParameterException
+     */
+    public AccountingRequest(final String userName, final byte[] serviceType, final String sessionId )
             throws InvalidParameterException{
         super(RadiusPacket.ACCOUNTING_REQUEST);
         setAttribute(new UserNameAttribute(userName));
         setAttribute(new ServiceTypeAttribute(serviceType));
+        setAttribute(new AcctStatusTypeAttribute(serviceType));
+        setAttribute(new AcctSessionIdAttribute(sessionId.getBytes()));
         this.initialized = true;
     }
     /**
@@ -28,8 +38,13 @@ public class AccountingRequest extends RadiusPacket {
      */
     public void validateAttribute(final RadiusAttribute radiusAttribute) throws InvalidParameterException{
         if ((initialized) && (radiusAttribute.getType() == RadiusAttributeValues.USER_NAME ||
-                    radiusAttribute.getType() == RadiusAttributeValues.SERVICE_TYPE )){
-            throw new InvalidParameterException ("Already initialized, cannot reset username or ServiceType.");
+                    radiusAttribute.getType() == RadiusAttributeValues.SERVICE_TYPE ||
+                    radiusAttribute.getType() == RadiusAttributeValues.ACCT_STATUS_TYPE ||
+                    radiusAttribute.getType() == RadiusAttributeValues.ACCT_SESSION_ID  )){
+            throw new InvalidParameterException ("Already initialized, cannot reset USER_NAME, SERVICE_TYPE, ACCT_STATUS_TYPE or ACCT_SESSION_ID.");
+        }else if ((radiusAttribute.getType() == RadiusAttributeValues.SERVICE_TYPE) &&
+                    (radiusAttribute.getValue().length != 4)){
+            throw new InvalidParameterException ("SERVICE_TYPE must be 4 bytes long.");
         }
     }
 }
