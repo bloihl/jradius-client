@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.30 $
+ * @version $Revision: 1.31 $
  */
 public class RadiusClient
 {
@@ -150,13 +150,16 @@ public class RadiusClient
         this.setAcctPort(acctPort);
     }
     /**
-     * This method performs the job of authenticating the specified user against
+     * This method performs the job of authenticating the given <code>RadiusPacket</code> against
      * the radius server.
-     * @param userPass java.lang.String
-     * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
-     *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
+     * 
+     * @param RadiusPacket containing all of the <code>RadiusAttributes</code> for this request. This 
+     * <code>RadiusPacket</code> must include the USER_NAME attribute and be of type ACCEES_REQUEST. 
+     * If the USER_PASSWORD attribute is set it must contain the plaintext bytes, we will encode the 
+     * plaintext to send to the server with a REVERSIBLE algorithm. We will set the NAS_IDENTIFIER 
+     * Attribute, so even if it is set in the RadiusPacket we will overwrite it
+     * 
+     * @return RadiusPacket containing the response attributes for this request
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
@@ -165,15 +168,17 @@ public class RadiusClient
         return this.authenticate(accessRequest, RadiusClient.AUTH_LOOP_COUNT);
     }
     /**
-     * This method performs the job of authenticating the specified user against
+     * This method performs the job of authenticating the given <code>RadiusPacket</code> against
      * the radius server.
-     * @param userPass java.lang.String plaintext userPass to be encrypted using PAP algorithm
-     * @param requestAttributes ByteArrayOutputStream
-     * @param int retries must be zero or greater if it is zero default value of 3 will be used
-     * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
-     *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
+     * 
+     * @param RadiusPacket containing all of the <code>RadiusAttributes</code> for this request. This 
+     * <code>RadiusPacket</code> must include the USER_NAME attribute and be of type ACCEES_REQUEST. 
+     * If the USER_PASSWORD attribute is set it must contain the plaintext bytes, we will encode the 
+     * plaintext to send to the server with a REVERSIBLE algorithm. We will set the NAS_IDENTIFIER 
+     * Attribute, so even if it is set in the RadiusPacket we will overwrite it
+     * @param int retries must be zero or greater, if it is zero default value of 3 will be used
+     * 
+     * @return RadiusPacket containing the response attributes for this request
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
@@ -201,7 +206,7 @@ public class RadiusClient
         try{
             byte [] userPass = accessRequest.getAttribute(RadiusAttributeValues.USER_PASSWORD).getValue();
             if(userPass.length > 0){//otherwise we don't add it to the Attributes
-                byte [] encryptedPass = this.encryptPapPassword(userPass, requestAuthenticator);
+                byte [] encryptedPass = this.encodePapPassword(userPass, requestAuthenticator);
                 //(encryptPass gives ArrayIndexOutOfBoundsException if password is of zero length)
                 accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.USER_PASSWORD, encryptedPass));
             }
@@ -229,243 +234,238 @@ public class RadiusClient
         }
         return responsePacket;//won't ever return null
     }
-    /**
-     *
-     * @param java.lang.String sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean startAccounting(String sessionID) throws IOException, UnknownHostException{
-        return this.startAccounting(sessionID, null);
-    }
-    /**
-     *
-     * @param java.lang.String sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean updateAccounting(String sessionID) throws IOException, UnknownHostException{
-        return this.updateAccounting(sessionID, null);
-    }
-    /**
-     *
-     * @param java.lang.String sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean stopAccounting(String sessionID) throws IOException, UnknownHostException{
-        return this.stopAccounting(sessionID, null);
-    }
-    /**
-     *
-     * @param java.lang.String sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean enableAccounting(String sessionID) throws IOException, UnknownHostException{
-        return this.enableAccounting(sessionID, null);
-    }
-    /**
-     *
-     * @param java.lang.String sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean disableAccounting(String sessionID) throws IOException, UnknownHostException{
-        return this.disableAccounting(sessionID, null);
-    }
-    /**
-     *
-     * @param sessionID the session identifier we are accounting
-     *      against for this user
-     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean startAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-            throws IOException, UnknownHostException
-    {
-        byte[] service = new byte[]{0, 0, 0, 1};
-        try{
-            return this.account(service, sessionID, requestAttributes);
-        }catch (RadiusException rex){
-            //only happens when service is too long or short so we ignore it
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @param sessionID the session identifier we are accounting
-     *      against for this user
-     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean updateAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-            throws IOException, UnknownHostException
-    {
-        byte[] service = new byte[]{0, 0, 0, 3};
-        try{
-            return this.account(service, sessionID, requestAttributes);
-        }catch (RadiusException rex){
-            //only happens when service is too long or short so we ignore it
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @param sessionID the session identifier we are accounting
-     *      against for this user
-     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean stopAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-            throws IOException, UnknownHostException
-    {
-        byte[] service = new byte[]{0, 0, 0, 2};
-        try{
-            return this.account(service, sessionID, requestAttributes);
-        }catch (RadiusException rex){
-            //only happens when service is too long or short so we ignore it
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @param sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean enableAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-            throws IOException, UnknownHostException
-    {
-        byte[] service = new byte[]{0, 0, 0, 7};
-        try{
-            return this.account(service, sessionID, requestAttributes);
-        }catch (RadiusException rex){
-            //only happens when service is too long or short so we ignore it
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @param sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     */
-    public boolean disableAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-            throws IOException, UnknownHostException
-    {
-        byte[] service = new byte[]{0, 0, 0, 8};
-        try{
-            return this.account(service, sessionID, requestAttributes);
-        }catch (RadiusException rex){
-            //only happens when service is too long or short so we ignore it
-        }
-        return false;
-    }
-    /**
-     * This method performs the job of sending accounting information for the
-     * current user to the radius accounting server.
-     * @param byte[] service the type of accounting we are going to do MUST BE 4 BYTES LONG
-     * @param java.lang.String sessionID the session identifier we are accounting
-     *      against for this user
-     * @return boolean Whether or not this accounting request was successfull
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     * @exception net.sourceforge.jradiusclient.exception.radius.RadiusException
-     */
-    private boolean account(byte[] service, String sessionId) throws IOException,
-                                        UnknownHostException, RadiusException{
-        return this.account(service, sessionId, null);
-    }
+//    /**
+//     *
+//     * @param java.lang.String sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean startAccounting(String sessionID) throws IOException, UnknownHostException{
+//        return this.startAccounting(sessionID, null);
+//    }
+//    /**
+//     *
+//     * @param java.lang.String sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean updateAccounting(String sessionID) throws IOException, UnknownHostException{
+//        return this.updateAccounting(sessionID, null);
+//    }
+//    /**
+//     *
+//     * @param java.lang.String sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean stopAccounting(String sessionID) throws IOException, UnknownHostException{
+//        return this.stopAccounting(sessionID, null);
+//    }
+//    /**
+//     *
+//     * @param java.lang.String sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean enableAccounting(String sessionID) throws IOException, UnknownHostException{
+//        return this.enableAccounting(sessionID, null);
+//    }
+//    /**
+//     *
+//     * @param java.lang.String sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean disableAccounting(String sessionID) throws IOException, UnknownHostException{
+//        return this.disableAccounting(sessionID, null);
+//    }
+//    /**
+//     *
+//     * @param sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean startAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
+//            throws IOException, UnknownHostException
+//    {
+//        byte[] service = new byte[]{0, 0, 0, 1};
+//        try{
+//            return this.account(service, sessionID, requestAttributes);
+//        }catch (RadiusException rex){
+//            //only happens when service is too long or short so we ignore it
+//        }
+//        return false;
+//    }
+//
+//    /**
+//     *
+//     * @param sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean updateAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
+//            throws IOException, UnknownHostException
+//    {
+//        byte[] service = new byte[]{0, 0, 0, 3};
+//        try{
+//            return this.account(service, sessionID, requestAttributes);
+//        }catch (RadiusException rex){
+//            //only happens when service is too long or short so we ignore it
+//        }
+//        return false;
+//    }
+//
+//    /**
+//     *
+//     * @param sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean stopAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
+//            throws IOException, UnknownHostException
+//    {
+//        byte[] service = new byte[]{0, 0, 0, 2};
+//        try{
+//            return this.account(service, sessionID, requestAttributes);
+//        }catch (RadiusException rex){
+//            //only happens when service is too long or short so we ignore it
+//        }
+//        return false;
+//    }
+//
+//    /**
+//     *
+//     * @param sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean enableAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
+//            throws IOException, UnknownHostException
+//    {
+//        byte[] service = new byte[]{0, 0, 0, 7};
+//        try{
+//            return this.account(service, sessionID, requestAttributes);
+//        }catch (RadiusException rex){
+//            //only happens when service is too long or short so we ignore it
+//        }
+//        return false;
+//    }
+//
+//    /**
+//     *
+//     * @param sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successfull
+//     * @exception java.io.IOException
+//     * @exception java.net.UnknownHostException
+//     */
+//    public boolean disableAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
+//            throws IOException, UnknownHostException
+//    {
+//        byte[] service = new byte[]{0, 0, 0, 8};
+//        try{
+//            return this.account(service, sessionID, requestAttributes);
+//        }catch (RadiusException rex){
+//            //only happens when service is too long or short so we ignore it
+//        }
+//        return false;
+//    }
+//    /**
+//     * This method performs the job of sending accounting information for the
+//     * current user to the radius accounting server.
+//     * @param byte[] service the type of accounting we are going to do MUST BE 4 BYTES LONG
+//     * @param java.lang.String sessionID the session identifier we are accounting
+//     *      against for this user
+//     * @return boolean Whether or not this accounting request was successful
+//     * @exception net.sourceforge.jradiusclient.exception.radius.RadiusException
+//     */
+//    private boolean account(byte[] service, String sessionId) throws RadiusException{
+//        if (service.length != 4){
+//            throw new RadiusException("The service byte array must have a length of 4");
+//        }
+//        return this.account(service, sessionId, null);
+//    }
     /**
       * This method performs the job of sending accounting information for the
       * current user to the radius accounting server.
-      * @param service the type of accounting we are going to do MUST BE 4 BYTES LONG
-      * @param sessionId the session identifier we are accounting
-      *      against for this user
-      * @param reqAttributes Any additional request attributes to add to the accounting packet. (J.B. 25/08/2003)
-      * @return boolean Whether or not this accounting request was successfull
-      * @exception java.io.IOException
-      * @exception java.net.UnknownHostException
+      * @param requestPacket Any  request attributes to add to the accounting packet. 
+      * @return RadiusPacket a packet containing the response from the Radius server
       * @exception net.sourceforge.jradiusclient.exception.RadiusException
+      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
       */
-    private boolean account(byte[] service, String sessionId, ByteArrayOutputStream reqAttributes)
-            throws IOException,UnknownHostException, RadiusException{
+    public RadiusPacket account(RadiusPacket requestPacket)
+            throws InvalidParameterException, RadiusException{
                 
-        byte code = RadiusPacket.ACCOUNTING_REQUEST;
-        byte identifier = 0;//RadiusClient.getNextIdentifier();
-        if (service.length != 4){
-            throw new RadiusException("The service byte array must have a length of 4");
+        byte code = requestPacket.getPacketType();
+        if(code != RadiusPacket.ACCOUNTING_REQUEST){
+            throw new InvalidParameterException("Invalid type passed in for RadiusPacket");
         }
-
-        if ((sessionId == null) || (sessionId == "")){
-            //sessionId = "session" + this.userName;
+        //make sure the folllowing attributes are set
+        try{
+            requestPacket.getAttribute(RadiusAttributeValues.USER_NAME);
+            requestPacket.getAttribute(RadiusAttributeValues.ACCT_STATUS_TYPE);
+            requestPacket.getAttribute(RadiusAttributeValues.ACCT_SESSION_ID);
+            requestPacket.getAttribute(RadiusAttributeValues.SERVICE_TYPE);
+        }catch(RadiusException rex){
+            throw new InvalidParameterException("Missing RadiusAttribute in Accounting RequestPacket: "+ rex.getMessage());
         }
-        
-        ByteArrayOutputStream requestAttributes = null;
-        if (reqAttributes != null){
-            requestAttributes = reqAttributes;
-        }else{
-            requestAttributes = new ByteArrayOutputStream();
-        }
-        
-//        this.setAttribute(RadiusAttributeValues.USER_NAME, this.userName.getBytes(), requestAttributes);
-//        this.setAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID, requestAttributes);
-//        this.setAttribute(RadiusAttributeValues.ACCT_STATUS_TYPE, service, requestAttributes); // Acct-Status-Type
-//        this.setAttribute(RadiusAttributeValues.ACCT_SESSION_ID, sessionId.getBytes(), requestAttributes);
-//        this.setAttribute(RadiusAttributeValues.SERVICE_TYPE, service, requestAttributes);
+        byte identifier = requestPacket.getPacketIdentifier();//RadiusClient.getNextIdentifier();
+        requestPacket.setAttribute(new RadiusAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID));
         
         // Length of Packet is computed as follows, 20 bytes (corresponding to
         // length of code + Identifier + Length + Request Authenticator) +
         // each attribute has a length computed as follows: 1 byte for the type +
         // 1 byte for the length of the attribute + length of attribute bytes
-        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.size());
+        byte[] requestAttributesBytes = requestPacket.getAttributeBytes();
+        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributesBytes.length);
         byte[] requestAuthenticator =
-            this.makeRFC2866RequestAuthenticator(code, identifier, length, requestAttributes.toByteArray());
+            this.makeRFC2866RequestAuthenticator(code, identifier, length, requestAttributesBytes);
         
         DatagramPacket packet =
-            this.composeRadiusPacket(this.getAcctPort(), code, identifier, length, requestAuthenticator, requestAttributes.toByteArray());
+            this.composeRadiusPacket(this.getAcctPort(), code, identifier, length, requestAuthenticator, requestAttributesBytes);
         //send the request / recieve the response
+        RadiusPacket responsePacket = null;
         if ((packet = this.sendReceivePacket(packet, RadiusClient.ACCT_LOOP_COUNT)) != null) {
-            if (RadiusPacket.ACCOUNTING_RESPONSE == this.checkRadiusPacket(packet, identifier, requestAuthenticator).getPacketType()) {
-                return true;
+            responsePacket = this.checkRadiusPacket(packet, identifier, requestAuthenticator);
+            if (RadiusPacket.ACCOUNTING_RESPONSE != responsePacket.getPacketType()) {
+                //how did we get here!! the Radius Server sent us a non-accounting response!
+                throw new RadiusException("The radius Server responded with an incorrect response type.");
             }
+        }else{
+            //else we didn't get back a response which indicates failure to
+            //communicate successfully with the RADIUS Accounting
+            throw new RadiusException("null returned from sendReceivePacket");
         }
-        //else we didn't get back a response which indicates failure to
-        //communicate successfully with the RADIUS Accounting
-        return false;
+        return responsePacket;
     }
     /**
-     * This method encrypts the plaintext user password according to RFC 2865
+     * This method encodes the plaintext user password according to RFC 2865
      * @param userPass java.lang.String the password to encrypt
      * @param requestAuthenticator byte[] the requestAuthenicator to use in the encryption
      * @return byte[] the byte array containing the encrypted password
      */
-    private byte [] encryptPapPassword(final byte[] userPass, final byte [] requestAuthenticator) {
+    private byte [] encodePapPassword(final byte[] userPass, final byte [] requestAuthenticator) {
         // encrypt the password.
         byte[] userPassBytes = null;
         //the password must be a multiple of 16 bytes and less than or equal
