@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -44,6 +44,7 @@ public class RadiusClient implements RadiusValues
     private String userName = "";
     private String sharedSecret = "";
     private String hostname = "";
+    private boolean useCHAP = false;
     //This is a weak implementation for Response Attributes as it will only
     //store the last element put into it in the parsing process, whereas some of
     //the elements in the Response packet from the Radius Server may occur
@@ -73,6 +74,7 @@ public class RadiusClient implements RadiusValues
      * @param hostname java.lang.String
      * @param sharedSecret java.lang.String
      * @param userName java.lang.String
+     * @param useCHAP boolean Use CHAP protocol to encrypt Password, false indicates PAP password usage
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
      *                              instance of the MD5 algorithm.
@@ -82,7 +84,7 @@ public class RadiusClient implements RadiusValues
      *                              shared secret (null, shared secret can be
      *                              empty string) is passed in.
      */
-    public RadiusClient(String hostname, String sharedSecret, String userName)
+    public RadiusClient(String hostname, String sharedSecret, String userName, boolean useCHAP)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
         this.setHostname(hostname);
         this.setUserName(userName);
@@ -92,6 +94,7 @@ public class RadiusClient implements RadiusValues
         this.socket.setSoTimeout(socketTimeout);
         //set up the md5 engine
         this.md5MessageDigest = MessageDigest.getInstance("MD5");
+        this.useCHAP = useCHAP;
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
@@ -109,18 +112,17 @@ public class RadiusClient implements RadiusValues
      *                              or an invalid shared secret (null, shared
      *                              secret can be empty string) is passed in.
      */
-    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName)
+    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName, boolean useCHAP)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, sharedSecret, userName);
+        this(hostname, sharedSecret, userName, useCHAP);
         this.setAuthPort(authPort);
         this.setAcctPort(acctPort);
     }
     /**
      * This method performs the job of authenticating the specified user against
      * the radius server.
-     * @param userName java.lang.String
      * @param userPass java.lang.String
-     * @return int Will be one of three pssible values RadiusClient.ACCESS_ACCEPT,
+     * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
      *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
      * @exception java.io.IOException
      * @exception java.net.UnknownHostException
@@ -128,6 +130,22 @@ public class RadiusClient implements RadiusValues
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
     public int authenticate(String userPass)
+    throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
+        return this.authenticate(userPass, null);
+    }
+    /**
+     * This method performs the job of authenticating the specified user against
+     * the radius server.
+     * @param userPass java.lang.String
+     * @param requestAttributes ByteArrayOutputStream
+     * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
+     *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     * @exception net.sourceforge.jradiusclient.exception.RadiusException
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
+     */
+    public int authenticate(String userPass, ByteArrayOutputStream requestAttributes)
     throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
         //test for validity of userPass
         if (userPass == null){
@@ -142,7 +160,9 @@ public class RadiusClient implements RadiusValues
         // ***************************************************************
         //                          Attributes.
         // ***************************************************************
-        ByteArrayOutputStream requestAttributes = new ByteArrayOutputStream();
+        if (requestAttributes == null){
+            requestAttributes = new ByteArrayOutputStream();
+        }
         // USER_NAME
         this.setAttribute(RadiusClient.USER_NAME, this.userName.getBytes(), requestAttributes);
         // USER_PASSWORD
@@ -150,8 +170,12 @@ public class RadiusClient implements RadiusValues
             if (userPass.length() > 16){
                 userPass = userPass.substring(0, 16);
             }
-            //(encryptPass gives ArrayIndexOutOfBioundsException if password is of zero length)
-            this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), this.encryptPass(userPass, requestAuthenticator), requestAttributes);
+            if(this.useCHAP){
+                //(encryptPass gives ArrayIndexOutOfBioundsException if password is of zero length)
+                this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), this.encryptPass(userPass, requestAuthenticator), requestAttributes);
+            }else{
+                this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), userPass.getBytes(), requestAttributes);
+            }
         }
         //set a STATE attribute IF it is there (for Challenge responses)
         try{
@@ -749,7 +773,7 @@ public class RadiusClient implements RadiusValues
      * @param attribute byte[] the actual attribute byte array
      * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
      */
-    private void setAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes)
+    public void setAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes)
     {
         this.setAttribute(type, attribute.length, attribute, requestAttributes);
     }

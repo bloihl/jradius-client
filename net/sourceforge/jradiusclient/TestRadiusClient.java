@@ -2,17 +2,18 @@ package net.sourceforge.jradiusclient;
 
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class TestRadiusClient{
     public static void main(String [] args)
     {
-        if (args.length < 4)
+        if (args.length < 8)
         {
-            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user [password]");
+            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user password PAP|CHAP calling-station-id");
             System.exit(2);
         }
         int authport = 0 ;
@@ -22,34 +23,36 @@ public class TestRadiusClient{
             acctport = Integer.parseInt(args[2]);
         }catch (NumberFormatException nfex){
             TestRadiusClient.log("port must be a positive integer!");
-            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user password");
+            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user password PAP|CHAP  calling-station-id");
             System.exit(3);
         }
+
+        boolean useCHAP = false;
+        if(args[6].equalsIgnoreCase("CHAP")){
+            useCHAP = true;
+        }
+
         RadiusClient rc = null;
         try{
-            rc = new RadiusClient(args[0], authport,acctport, args[3],args[4]);
+            rc = new RadiusClient(args[0], authport,acctport, args[3],args[4], useCHAP);
         }catch(java.net.SocketException soex){
             TestRadiusClient.log("Unable to create Radius Client due to failure to create socket!");
-            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user [password]");
+            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user password PAP|CHAP  calling-station-id");
             System.exit(4);
         }catch(java.security.NoSuchAlgorithmException nsaex){
             TestRadiusClient.log("Unable to create Radius Client due to failure to create MD5 MessageDigest!");
-            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user [password]");
+            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user password PAP|CHAP  calling-station-id");
             System.exit(5);
         }catch(InvalidParameterException ivpex){
             TestRadiusClient.log("Unable to create Radius Client due to invalid parameter!");
             TestRadiusClient.log(ivpex.getMessage());
-            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user [password]");
+            TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user password PAP|CHAP  calling-station-id");
             System.exit(6);
         }
-        String userPass;
-        if (args.length == 6){
-            userPass = args[5];
-        }else{
-            userPass = "";
-        }
+        String userPass = args[5];
+        byte[] callingStationId = args[7].getBytes();
         try{
-            boolean returned = TestRadiusClient.authenticate(rc, userPass);
+            boolean returned = TestRadiusClient.authenticate(rc, userPass, callingStationId);
             if (returned){
                 TestRadiusClient.log("------------------------------------------------------");
                 returned = rc.startAccounting(args[5]);
@@ -77,9 +80,11 @@ public class TestRadiusClient{
             TestRadiusClient.log(rex.getMessage());
         }
     }
-    public static boolean authenticate(RadiusClient rc, String userPass) throws InvalidParameterException,
+    public static boolean authenticate(RadiusClient rc, String userPass,  byte[] calledStationId) throws InvalidParameterException,
     java.net.UnknownHostException, java.io.IOException, RadiusException{
-        int returnCode = rc.authenticate(userPass);
+        ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
+        rc.setAttribute(RadiusClient.CALLED_STATION_ID,calledStationId, reqAttributes);
+        int returnCode = rc.authenticate(userPass, reqAttributes);
         boolean returned = false;
         TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         switch (returnCode){
@@ -96,7 +101,7 @@ public class TestRadiusClient{
             //wait for user input
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
             userPass = br.readLine();
-            returned = TestRadiusClient.authenticate(rc, userPass);
+            returned = TestRadiusClient.authenticate(rc, userPass, calledStationId);
             break;
         default:
             TestRadiusClient.log("How the hell did we get here?");
