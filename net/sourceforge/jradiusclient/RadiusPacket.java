@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -44,13 +44,13 @@ public class RadiusPacket {
     /* ******************  Constant Packet Type Codes  *************************/
     private static Object nextPacketIdLock = new Object();
     private static byte nextPacketId = (byte)0;
-    
+
     private int packetType = 0;
     private byte packetIdentifier = (byte)0;
     private Map attributes;
     /**
      * builds a type RadiusPacket with no Attributes set
-     * 
+     *
      * @param type int a PacketType to send.
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
@@ -58,7 +58,7 @@ public class RadiusPacket {
         this(type, getAndIncrementPacketIdentifier(),new ArrayList());
     }
     /**
-     * 
+     *
      * @param type
      * @param identifier
      * @throws InvalidParameterException
@@ -68,7 +68,7 @@ public class RadiusPacket {
     }
     /**
      * Builds a RadiusPacket with a predefined set of attributes
-     * 
+     *
      * @param type int a PacketType to send.
      * @param attributeList a list of RadiusAttribute objects to initialize this RadiusPacket with
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
@@ -78,7 +78,7 @@ public class RadiusPacket {
     }
     /**
      * Builds a RadiusPacket with a predefined set of attributes
-     * 
+     *
      * @param type
      * @param identifier
      * @param attributeList
@@ -115,7 +115,7 @@ public class RadiusPacket {
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
     public void setAttributes(List attributeList) throws InvalidParameterException{
-        if((null == attributeList)||(attributeList.size() == 0)){
+        if(null == attributeList){
             throw new InvalidParameterException("Attribute List was null");
         }
         RadiusAttribute tempRa;
@@ -133,7 +133,7 @@ public class RadiusPacket {
     }
     /**
      * retrieve a RadiusAttribute from this RadiusPacket
-     * @param attributeType an integer between 0 and 256 (i.e. a byte) from the list of Radius constants in 
+     * @param attributeType an integer between 0 and 256 (i.e. a byte) from the list of Radius constants in
      * net.sourceforge.jradiusclient.RadiusValues
      * @return a single RadiusAttribute from the RadiusPacket
      * @throws RadiusException if no attribute of type attributeType is stored in this RadiusPacket
@@ -157,7 +157,7 @@ public class RadiusPacket {
      * @return a java.util.Collection of RadiusAttributes
      */
     public Collection getAttributes(){
-        //I am concerned about handing out a Collection that is backed by the attributes map, 
+        //I am concerned about handing out a Collection that is backed by the attributes map,
         //i.e. changes to our own internal provate data can happen this way!!!!
         return this.attributes.values();
     }
@@ -169,7 +169,7 @@ public class RadiusPacket {
         return (byte)this.packetType;
     }
     /**
-     * Return the packetIdentifier for this RadiusPacket. This can be used to match request packets 
+     * Return the packetIdentifier for this RadiusPacket. This can be used to match request packets
      * to response packets
      * @return the packet identifier for this object.
      */
@@ -177,10 +177,10 @@ public class RadiusPacket {
         return this.packetIdentifier;
     }
     /**
-     * get the byte array 
+     * get the byte array
      * @return a byte array of the raw bytes for all of the RadiusAttributes assigned to this RadiusPacket
      * @throws RadiusException If there is any error assembling the bytes into a byte array
-     */    
+     */
     protected final byte[] getAttributeBytes() throws RadiusException{
         //check for an empty packet
         ByteArrayOutputStream bytes = new  ByteArrayOutputStream();

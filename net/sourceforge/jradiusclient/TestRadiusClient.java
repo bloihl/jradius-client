@@ -13,7 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -75,7 +75,8 @@ public class TestRadiusClient{
                 RadiusAttribute userNameAttribute;
                 //prompt user for input
                 System.out.print("Username: ");
-                userNameAttribute = new RadiusAttribute(RadiusAttributeValues.USER_NAME,inputReader.readLine().getBytes());
+                userName = inputReader.readLine();
+                userNameAttribute = new RadiusAttribute(RadiusAttributeValues.USER_NAME,userName.getBytes());
                 accessRequest.setAttribute(userNameAttribute);
                 System.out.print("Password: ");
                 userPass = inputReader.readLine();
@@ -88,13 +89,22 @@ public class TestRadiusClient{
                 }else{
                     accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.USER_PASSWORD,userPass.getBytes()));
                 }
-    //            System.out.print("Additional Attributes? [y|N]:");
-    //            System.out.print("Attribute Type:");
-    //            System.out.print("AttributeValue:");
+                System.out.print("Additional Attributes? [y|N]:");
+                boolean more = (inputReader.readLine().equalsIgnoreCase("y"))?true:false;
+                while(more){
+                    System.out.print("Attribute Type:");
+                    int type = Integer.parseInt(inputReader.readLine());
+                    System.out.print("AttributeValue:");
+                    byte[] value = inputReader.readLine().getBytes();
+                    accessRequest.setAttribute(new RadiusAttribute(type, value));
+                    System.out.print("Additional Attributes? [y|N]:");
+                    more = (inputReader.readLine().equalsIgnoreCase("y"))?true:false;
+                }
                 RadiusPacket accessResponse = rc.authenticate(accessRequest);
                 switch(accessResponse.getPacketType()){
                     case RadiusPacket.ACCESS_ACCEPT:
                         TestRadiusClient.log("User " + userName + " authenticated");
+                        account(rc,userName);
                         break;
                     case RadiusPacket.ACCESS_REJECT:
                         TestRadiusClient.log("User " + userName + " NOT authenticated");
@@ -121,73 +131,48 @@ public class TestRadiusClient{
         //challenge from the NAS, see RFC 2865 section 2.2
         //generate next chapIdentifier
         byte chapIdentifier = (byte)1;//todo randomize
-        byte[] chapResponse = plainText.getBytes();// if we get a exception we will send back plaintext
+        byte[] chapPassword = plainText.getBytes();// if we get an exception we will send back plaintext
         try{
             MessageDigest md5MessageDigest = MessageDigest.getInstance("MD5");
             md5MessageDigest.reset();
             md5MessageDigest.update(chapIdentifier);
             md5MessageDigest.update(plainText.getBytes());
-            chapResponse = md5MessageDigest.digest(chapChallenge);
+            byte[] chapResponse = md5MessageDigest.digest(chapChallenge);
             //now we are the NAS, composing the CHAP-Password Attribute, which consists
             //of the chapIdentifier byte followed by the 16 byte output of the MD5
             //algorithm received "over the wire" from the user
-            byte[] chapPassword = new byte[17];
+            chapPassword = new byte[17];
             chapPassword[0] = chapIdentifier;
             System.arraycopy(chapResponse,0,chapPassword,1,16);
         }catch(NoSuchAlgorithmException nsaex){
             TestRadiusClient.log(nsaex.getMessage());
         }
-        return chapResponse;
+        return chapPassword;
     }
-    private static void log(String message)
-    {
+    private static void log(String message){
         System.out.print  ("TestRadiusClient: ");
         System.out.println(message);
     }
-
-//    private void setSIPAttributes(RadiusClient rc, ByteArrayOutputStream reqAttributes) throws InvalidParameterException {
-//        rc.setUserAttribute(RadiusClient.DIGEST_RESPONSE, "0c02a1cc5ec9a986aaa7232bb975faffa".getBytes(), reqAttributes);
-//
-//             rc.setUserSubAttribute(
-//                 RadiusClient.DIGEST_ATTRIBUTE,
-//                 RadiusClient.SIP_REALM,
-//                 "buddyphone".getBytes(),
-//                 reqAttributes
-//             );
-//
-//             rc.setUserSubAttribute(
-//                 RadiusClient.DIGEST_ATTRIBUTE,
-//                 RadiusClient.SIP_USER_NAME,
-//                 "koehler".getBytes(),
-//                 reqAttributes
-//             );
-//
-//             rc.setUserSubAttribute(
-//                 RadiusClient.DIGEST_ATTRIBUTE,
-//                 RadiusClient.SIP_NONCE,
-//                 "1a80ff0a".getBytes(),
-//                 reqAttributes
-//             );
-//
-//             rc.setUserSubAttribute(
-//                 RadiusClient.DIGEST_ATTRIBUTE,
-//                 RadiusClient.SIP_URI,
-//                 "sip:buddyphone.com:5060".getBytes(),
-//                 reqAttributes
-//             );
-//
-//             rc.setUserSubAttribute(
-//                 RadiusClient.DIGEST_ATTRIBUTE,
-//                 RadiusClient.SIP_METHOD,
-//                 "REGISTER".getBytes(),
-//                 reqAttributes
-//             );
-//
-//             rc.setUserSubAttribute(
-//                 RadiusClient.DIGEST_ATTRIBUTE,
-//                 RadiusClient.SIP_ALGORITHM,
-//                 "MD5".getBytes(),
-//                 reqAttributes
-//             );
-//    }
+    private static void account(RadiusClient rc, String userName) throws InvalidParameterException, RadiusException{
+        RadiusPacket accountRequest = new RadiusPacket(RadiusPacket.ACCOUNTING_REQUEST);
+        accountRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.USER_NAME,userName.getBytes()));
+        accountRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.ACCT_STATUS_TYPE,new byte[]{0, 0, 0, 1}));
+        accountRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.ACCT_SESSION_ID,("bob").getBytes()));
+        accountRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.SERVICE_TYPE,new byte[]{0, 0, 0, 1}));
+        RadiusPacket accountResponse = rc.account(accountRequest);
+        switch(accountResponse.getPacketType()){
+            case RadiusPacket.ACCOUNTING_MESSAGE:
+                TestRadiusClient.log("User " + userName + " got ACCOUNTING_MESSAGE response");
+                break;
+            case RadiusPacket.ACCOUNTING_RESPONSE:
+                TestRadiusClient.log("User " + userName + " got ACCOUNTING_RESPONSE response");
+                break;
+            case RadiusPacket.ACCOUNTING_STATUS:
+                TestRadiusClient.log("User " + userName + " got ACCOUNTING_STATUS response");
+                break;
+            default:
+                TestRadiusClient.log("User " + userName + " got invalid response " + accountResponse.getPacketType() );
+                break;
+        }
+    }
 }
