@@ -9,10 +9,11 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -49,28 +50,50 @@ public class RadiusPacket {
     private Map attributes;
     /**
      * builds a type RadiusPacket with no Attributes set
+     * 
      * @param type int a PacketType to send.
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
     public RadiusPacket(final int type) throws InvalidParameterException{
-        if((type < 1)||(type > 256)){
-            throw new InvalidParameterException("Type was out of bounds");
-        }
-        this.packetType = type;
-        this.packetIdentifier = getAndIncrementPacketIdentifier();
-        this.attributes = new HashMap();
+        this(type, getAndIncrementPacketIdentifier(),new ArrayList());
+    }
+    /**
+     * 
+     * @param type
+     * @param identifier
+     * @throws InvalidParameterException
+     */
+    public RadiusPacket(final int type, final byte identifier) throws InvalidParameterException{
+        this(type, identifier, new ArrayList());
     }
     /**
      * Builds a RadiusPacket with a predefined set of attributes
+     * 
      * @param type int a PacketType to send.
      * @param attributeList a list of RadiusAttribute objects to initialize this RadiusPacket with
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
     public RadiusPacket(final int type, final List attributeList) throws InvalidParameterException{
-        this(type);
-        if((null == attributeList)||(attributeList.size() == 0)){
+        this(type, getAndIncrementPacketIdentifier(), attributeList);
+    }
+    /**
+     * Builds a RadiusPacket with a predefined set of attributes
+     * 
+     * @param type
+     * @param identifier
+     * @param attributeList
+     * @throws InvalidParameterException
+     */
+    public RadiusPacket(final int type, final byte identifier, final List attributeList) throws InvalidParameterException{
+        if((type < 1)||(type > 256)){
+            throw new InvalidParameterException("Type was out of bounds");
+        }
+        if(null == attributeList){
             throw new InvalidParameterException("Attribute List was null");
         }
+        this.packetType = type;
+        this.packetIdentifier = identifier;
+        this.attributes = new HashMap();
         this.setAttributes(attributeList);
     }
     /**

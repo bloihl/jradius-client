@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.31 $
+ * @version $Revision: 1.32 $
  */
 public class RadiusClient
 {
@@ -416,7 +416,10 @@ public class RadiusClient
       */
     public RadiusPacket account(RadiusPacket requestPacket)
             throws InvalidParameterException, RadiusException{
-                
+
+        if(null == requestPacket){
+            throw new InvalidParameterException("requestPacket parameter cannot be null");
+        }
         byte code = requestPacket.getPacketType();
         if(code != RadiusPacket.ACCOUNTING_REQUEST){
             throw new InvalidParameterException("Invalid type passed in for RadiusPacket");
@@ -793,8 +796,8 @@ public class RadiusClient
                     }
                 }
             }
-            RadiusPacket responsePacket = new RadiusPacket(returnCode);
-            //RadiusPacket responsePacket = new RadiusResponsePacket(returnCode,identifierByte);
+            
+            RadiusPacket responsePacket = new RadiusPacket(returnCode,identifierByte);
         
         
             //now parse out the responseAttributeBytes into the responseAttributes hashtable
