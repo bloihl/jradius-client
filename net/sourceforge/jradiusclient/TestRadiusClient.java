@@ -16,7 +16,7 @@ import net.sourceforge.jradiusclient.packets.*;
 import net.sourceforge.jradiusclient.util.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -117,7 +117,7 @@ public class TestRadiusClient{
                 switch(accessResponse.getPacketType()){
                     case RadiusPacket.ACCESS_ACCEPT:
                         TestRadiusClient.log("User " + userName + " authenticated");
-                        account(rc,userName);
+                        basicAccount(rc,userName);
                         break;
                     case RadiusPacket.ACCESS_REJECT:
                         TestRadiusClient.log("User " + userName + " NOT authenticated");
@@ -143,7 +143,6 @@ public class TestRadiusClient{
         }catch(IOException ioex){
             TestRadiusClient.log(ioex.getMessage());
         }
-
     }
     private static byte[] chapEncrypt(final String plainText,
                                       final byte[] chapChallenge,
@@ -156,11 +155,7 @@ public class TestRadiusClient{
                          0, chapPassword, 1, 16);
         return chapPassword;
     }
-    private static void log(final String message){
-        System.out.print  ("TestRadiusClient: ");
-        System.out.println(message);
-    }
-    private static void account(final RadiusClient rc,
+    private static void basicAccount(final RadiusClient rc,
                                 final String userName)
             throws InvalidParameterException, RadiusException{
         RadiusPacket accountRequest = new RadiusPacket(RadiusPacket.ACCOUNTING_REQUEST);
@@ -183,5 +178,93 @@ public class TestRadiusClient{
                 TestRadiusClient.log("User " + userName + " got invalid response " + accountResponse.getPacketType() );
                 break;
         }
+    }
+    private static void advAuthenticate(final RadiusClient rc,
+            final ChapUtil chapUtil,
+            final BufferedReader inputReader){
+        try{
+            boolean attributes = false, continueTest = true;
+            String userName = null, userPass = null, authMethod = null;
+            System.out.println("Performing tests using advanced classes: ");
+            while(continueTest){
+                attributes = false;
+                RadiusPacket accessRequest = null;
+                //prompt user for input
+                System.out.print("Username: ");
+                userName = inputReader.readLine();
+                System.out.print("Password: ");
+                userPass = inputReader.readLine();
+                System.out.print("Authentication method [PAP | chap]: ");
+                authMethod = inputReader.readLine();
+                if(authMethod.equalsIgnoreCase("chap")){
+                    accessRequest = new ChapAccessRequest(userName, userPass);
+                }else{
+                    accessRequest = new PapAccessRequest(userName,userPass);
+                }
+                System.out.print("Additional Attributes? [y|N]:");
+                boolean more = (inputReader.readLine().equalsIgnoreCase("y"))?true:false;
+                while(more){
+                    System.out.print("Attribute Type:");
+                    int type = Integer.parseInt(inputReader.readLine());
+                    System.out.print("AttributeValue:");
+                    byte[] value = inputReader.readLine().getBytes();
+                    accessRequest.setAttribute(new RadiusAttribute(type, value));
+                    System.out.print("Additional Attributes? [y|N]:");
+                    more = (inputReader.readLine().equalsIgnoreCase("y"))?true:false;
+                }
+                RadiusPacket accessResponse = rc.authenticate(accessRequest);
+                switch(accessResponse.getPacketType()){
+                    case RadiusPacket.ACCESS_ACCEPT:
+                        TestRadiusClient.log("User " + userName + " authenticated");
+                    advAccount(rc,userName);
+                        break;
+                    case RadiusPacket.ACCESS_REJECT:
+                        TestRadiusClient.log("User " + userName + " NOT authenticated");
+                        break;
+                    case RadiusPacket.ACCESS_CHALLENGE:
+                        String reply = new String(accessResponse.getAttribute(RadiusAttributeValues.REPLY_MESSAGE).getValue());
+                        TestRadiusClient.log("User " + userName + " Challenged with " + reply);
+                        break;
+                    default:
+                        TestRadiusClient.log("Whoa, what kind of RadiusPacket is this " + accessResponse.getPacketType());
+                        break;
+                }
+                System.out.print("Another Advanced Test [ Y | n ]: ");
+                authMethod = inputReader.readLine();
+                if(authMethod.equalsIgnoreCase("n")){
+                    continueTest = false;
+                }
+            }
+        }catch(InvalidParameterException ivpex){
+            TestRadiusClient.log(ivpex.getMessage());
+        }catch(RadiusException rex){
+            TestRadiusClient.log(rex.getMessage());
+        }catch(IOException ioex){
+            TestRadiusClient.log(ioex.getMessage());
+        }
+    }
+    private static void advAccount(final RadiusClient rc,
+                                final String userName)
+            throws InvalidParameterException, RadiusException{
+        RadiusPacket accountRequest = new AccountingRequest(userName, new byte[]{0,0,0,1}, userName);
+        RadiusPacket accountResponse = rc.account(accountRequest);
+        switch(accountResponse.getPacketType()){
+            case RadiusPacket.ACCOUNTING_MESSAGE:
+                TestRadiusClient.log("User " + userName + " got ACCOUNTING_MESSAGE response");
+                break;
+            case RadiusPacket.ACCOUNTING_RESPONSE:
+                TestRadiusClient.log("User " + userName + " got ACCOUNTING_RESPONSE response");
+                break;
+            case RadiusPacket.ACCOUNTING_STATUS:
+                TestRadiusClient.log("User " + userName + " got ACCOUNTING_STATUS response");
+                break;
+            default:
+                TestRadiusClient.log("User " + userName + " got invalid response " + accountResponse.getPacketType() );
+                break;
+        }
+    }
+    private static void log(final String message){
+        System.out.print  ("TestRadiusClient: ");
+        System.out.println(message);
     }
 }
