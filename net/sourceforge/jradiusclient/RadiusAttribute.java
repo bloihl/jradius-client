@@ -6,7 +6,7 @@ import java.io.IOException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class RadiusAttribute implements RadiusAttributeValues{
     private static final int HEADER_LENGTH = 2;
@@ -59,7 +59,7 @@ public class RadiusAttribute implements RadiusAttributeValues{
      * get the bytes that will go into a RadiusPacket
      * @return the byte array to be used in construction of a RadiusPacket
      */
-    protected final byte[] getPacketBytes(){
+    protected final byte[] getBytes(){
         return this.packetBytes;
     }
 }

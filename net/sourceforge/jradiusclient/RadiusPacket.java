@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -42,10 +42,10 @@ public class RadiusPacket {
     public static final int RESERVED            = 255;
     /* ******************  Constant Packet Type Codes  *************************/
     private static Object nextPacketIdLock = new Object();
-    private static int nextPacketId = 0;
+    private static byte nextPacketId = (byte)0;
     
     private int packetType = 0;
-    private int packetIdentifier = 0;
+    private byte packetIdentifier = (byte)0;
     private Map attributes;
     /**
      * builds a type RadiusPacket with no Attributes set
@@ -103,7 +103,9 @@ public class RadiusPacket {
             }catch(ClassCastException ccex){
                 throw new InvalidParameterException("Attribute List contained an entry that was not a net.sourceforge.jradiusclient.RadiusAttribute");
             }
-            this.attributes.put(new Integer(tempRa.getType()),tempRa);
+            synchronized(this.attributes){
+                this.attributes.put(new Integer(tempRa.getType()),tempRa);
+            }
         }
     }
     /**
@@ -136,22 +138,34 @@ public class RadiusPacket {
         //i.e. changes to our own internal provate data can happen this way!!!!
         return this.attributes.values();
     }
-    public int getPacketType(){
-        return this.packetType;
+    /**
+     * get the packet type for this RadiusPacket
+     * @return packet type for this RadiusPacket
+     */
+    public byte getPacketType(){
+        return (byte)this.packetType;
+    }
+    /**
+     * Return the packetIdentifier for this RadiusPacket. This can be used to match request packets 
+     * to response packets
+     * @return the packet identifier for this object.
+     */
+    public byte getPacketIdentifier(){
+        return this.packetIdentifier;
     }
     /**
      * get the byte array 
      * @return a byte array of the raw bytes for all of the RadiusAttributes assigned to this RadiusPacket
      * @throws RadiusException If there is any error assembling the bytes into a byte array
      */    
-    protected final byte[] getPacketBytes() throws RadiusException{
+    protected final byte[] getAttributeBytes() throws RadiusException{
         //check for an empty packet
         ByteArrayOutputStream bytes = new  ByteArrayOutputStream();
         synchronized (this.attributes){
             Iterator attributeList = this.attributes.values().iterator();
             while(attributeList.hasNext()){
                 try{
-                    bytes.write(((RadiusAttribute)attributeList.next()).getPacketBytes());
+                    bytes.write(((RadiusAttribute)attributeList.next()).getBytes());
                 }catch(java.io.IOException ioex){
                     throw new RadiusException ("Error writing bytes to ByteArrayOutputStream!!!");
                 }
@@ -159,7 +173,11 @@ public class RadiusPacket {
             return bytes.toByteArray();
         }
     }
-    private static int getAndIncrementPacketIdentifier(){
+    /**
+     * retrieves the next PacketIdentifier to use and increments the static storage
+     * @return the next packetIdentifier to use.
+     */
+    private static byte getAndIncrementPacketIdentifier(){
         synchronized (nextPacketIdLock){
             return nextPacketId++;
         }

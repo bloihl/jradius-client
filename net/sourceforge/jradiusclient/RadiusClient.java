@@ -47,7 +47,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class RadiusClient
 {
@@ -58,9 +58,6 @@ public class RadiusClient
     private static final int DEFAULT_AUTH_PORT = 1812;
     private static final int DEFAULT_ACCT_PORT = 1813;
     private static final int DEFAULT_SOCKET_TIMEOUT = 6000;
-    private static Object nextIdentifierLock = new Object();
-    private static byte nextIdentifier = (byte)0;
-    private String userName = "";
     private String sharedSecret = "";
     private String hostname = "";
     //This is a weak implementation for Response Attributes as it will only
@@ -91,7 +88,6 @@ public class RadiusClient
      * Constructor - uses the default port 1812 for authentication and 1813 for accounting
      * @param hostname java.lang.String
      * @param sharedSecret java.lang.String
-     * @param userName java.lang.String
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
      *                              instance of the MD5 algorithm.
@@ -101,9 +97,9 @@ public class RadiusClient
      *                              shared secret (null, shared secret can be
      *                              empty string) is passed in.
      */
-    public RadiusClient(String hostname, String sharedSecret, String userName)
+    public RadiusClient(String hostname, String sharedSecret)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, DEFAULT_AUTH_PORT, DEFAULT_ACCT_PORT, sharedSecret, userName, DEFAULT_SOCKET_TIMEOUT);
+        this(hostname, DEFAULT_AUTH_PORT, DEFAULT_ACCT_PORT, sharedSecret, DEFAULT_SOCKET_TIMEOUT);
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
@@ -111,7 +107,6 @@ public class RadiusClient
      * @param authPort int the port to use for authentication requests
      * @param acctPort int the port to use for accounting requests
      * @param sharedSecret java.lang.String
-     * @param userName java.lang.String
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
      *                              instance of the MD5 algorithm.
@@ -121,9 +116,9 @@ public class RadiusClient
      *                              or an invalid shared secret (null, shared
      *                              secret can be empty string) is passed in.
      */
-    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName)
+    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, authPort, acctPort, sharedSecret, userName, DEFAULT_SOCKET_TIMEOUT);
+        this(hostname, authPort, acctPort, sharedSecret, DEFAULT_SOCKET_TIMEOUT);
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
@@ -131,7 +126,6 @@ public class RadiusClient
      * @param authPort int the port to use for authentication requests
      * @param acctPort int the port to use for accounting requests
      * @param sharedSecret java.lang.String
-     * @param userName java.lang.String
      * @param timeout int the timeout to use when waiting for return packets can't be neg and shouldn't be zero
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
@@ -142,10 +136,9 @@ public class RadiusClient
      *                              or an invalid shared secret (null, shared
      *                              secret can be empty string) is passed in.
      */
-    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName, int sockTimeout)
+    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, int sockTimeout)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
         this.setHostname(hostname);
-        this.setUserName(userName);
         this.setSharedSecret(sharedSecret);
         //set up the socket for this client
         this.socket = new DatagramSocket();
@@ -166,25 +159,9 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
-    public int authenticate(String userPass)
+    public RadiusPacket authenticate(RadiusPacket accessRequest)
     throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
-        return this.authenticate(userPass, null);
-    }
-    /**
-     * This method performs the job of authenticating the specified user against
-     * the radius server.
-     * @param userPass java.lang.String
-     * @param requestAttributes ByteArrayOutputStream
-     * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
-     *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
-     * @exception java.io.IOException
-     * @exception java.net.UnknownHostException
-     * @exception net.sourceforge.jradiusclient.exception.RadiusException
-     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
-     */
-    public int authenticate(String userPass, ByteArrayOutputStream requestAttributes)
-    throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
-        return this.authenticate(userPass, requestAttributes, RadiusClient.AUTH_LOOP_COUNT);
+        return this.authenticate(accessRequest, RadiusClient.AUTH_LOOP_COUNT);
     }
     /**
      * This method performs the job of authenticating the specified user against
@@ -199,19 +176,18 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
-    public int authenticate(String userPass, ByteArrayOutputStream requestAttributes, int retries)
+    public RadiusPacket authenticate(RadiusPacket accessRequest, int retries)
     throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
-        //test for validity of userPass
-        if (userPass == null){
-            throw new InvalidParameterException("Password can not be null!");
-        }//else password is a-ok for passing to RADIUS Server
         if(retries < 0){
             throw new InvalidParameterException("retries must be zero or greater!");
         }else if (retries == 0){
             retries = RadiusClient.AUTH_LOOP_COUNT;
         }
-        byte code = RadiusPacket.ACCESS_REQUEST;  //1 byte: code
-        byte identifier = RadiusClient.getNextIdentifier();  //1 byte: Identifier can be anything, so should not be constant
+        byte code = accessRequest.getPacketType();
+        if(code != RadiusPacket.ACCESS_REQUEST){  //1 byte: code
+            throw new InvalidParameterException("Invalid packet type submitted to authenticate");
+        }
+        byte identifier = accessRequest.getPacketIdentifier();  //1 byte: Identifier can be anything, so should not be constant
 
         //16 bytes: Request Authenticator
         byte [] requestAuthenticator = this.makeRFC2865RequestAuthenticator();
@@ -223,7 +199,7 @@ public class RadiusClient
             requestAttributes = new ByteArrayOutputStream();
         }
         // USER_NAME
-        this.setAttribute(RadiusAttributeValues.USER_NAME, this.userName.getBytes(), requestAttributes);
+        //this.setAttribute(RadiusAttributeValues.USER_NAME, this.userName.getBytes(), requestAttributes);
         // USER_PASSWORD
         if(userPass.length() > 0){//otherwise we don't add it to the Attributes
             /*if (userPass.length() > 16){
@@ -248,7 +224,7 @@ public class RadiusClient
         short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.size() );
 
         DatagramPacket packet =
-            this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, requestAttributes.toByteArray());
+            this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, accessRequest.getAttributeBytes());
         // now send the request and recieve the response
         int responseCode = 0;
         if ((packet = this.sendReceivePacket(packet, retries)) != null){
@@ -1168,18 +1144,7 @@ public class RadiusClient
         //won't get here in the case of an exception so we won't return return null or a malformed packet
         return null;
     }
-    /**
-     * This method returns the next identifier for use in building Radius Packets.
-     * @return byte
-     */
-    private static byte getNextIdentifier(){
-        byte identifier = 0;
-        synchronized(RadiusClient.nextIdentifierLock){
-            identifier = RadiusClient.nextIdentifier;
-            RadiusClient.nextIdentifier++;
-        }
-        return identifier;
-    }
+
     /**
      * This method returns a string representation of this
      * <code>RadiusClient</code>.
