@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.29 $
+ * @version $Revision: 1.30 $
  */
 public class RadiusClient
 {
@@ -417,7 +417,7 @@ public class RadiusClient
             throws IOException,UnknownHostException, RadiusException{
                 
         byte code = RadiusPacket.ACCOUNTING_REQUEST;
-        //byte identifier = RadiusClient.getNextIdentifier();
+        byte identifier = 0;//RadiusClient.getNextIdentifier();
         if (service.length != 4){
             throw new RadiusException("The service byte array must have a length of 4");
         }
@@ -451,7 +451,7 @@ public class RadiusClient
             this.composeRadiusPacket(this.getAcctPort(), code, identifier, length, requestAuthenticator, requestAttributes.toByteArray());
         //send the request / recieve the response
         if ((packet = this.sendReceivePacket(packet, RadiusClient.ACCT_LOOP_COUNT)) != null) {
-            if (RadiusPacket.ACCOUNTING_RESPONSE == this.checkRadiusPacket(packet, identifier, requestAuthenticator)) {
+            if (RadiusPacket.ACCOUNTING_RESPONSE == this.checkRadiusPacket(packet, identifier, requestAuthenticator).getPacketType()) {
                 return true;
             }
         }
