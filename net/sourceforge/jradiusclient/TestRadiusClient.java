@@ -8,6 +8,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
+import java.util.Iterator;
 import net.sourceforge.jradiusclient.*;
 import net.sourceforge.jradiusclient.attributes.*;
 import net.sourceforge.jradiusclient.exception.*;
@@ -16,7 +18,7 @@ import net.sourceforge.jradiusclient.packets.*;
 import net.sourceforge.jradiusclient.util.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -179,6 +181,7 @@ public class TestRadiusClient{
                 TestRadiusClient.log("User " + userName + " got invalid response " + accountResponse.getPacketType() );
                 break;
         }
+        printAttributes(accountResponse);
     }
     private static void advAuthenticate(final RadiusClient rc,
             final ChapUtil chapUtil,
@@ -262,6 +265,17 @@ public class TestRadiusClient{
             default:
                 TestRadiusClient.log("User " + userName + " got invalid response " + accountResponse.getPacketType() );
                 break;
+        }
+        printAttributes(accountResponse);
+    }
+    private static void printAttributes(RadiusPacket rp){
+        Iterator attributes = rp.getAttributes().iterator();
+        RadiusAttribute tempRa;
+        System.out.println("Response Packet Attributes");
+        System.out.println("\tType\tValue");
+        while(attributes.hasNext()){
+            tempRa = (RadiusAttribute)attributes.next();
+            System.out.println("\t" + tempRa.getType() + "\t" + new String(tempRa.getValue()));
         }
     }
     private static void log(final String message){
