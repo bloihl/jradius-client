@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -410,26 +410,7 @@ public class RadiusClient implements RadiusValues
         }
         return encryptedPass;
     }
-    private void  printByteArray(byte[] byteArray){
-        System.out.print("byte array = |");
-        for (int i = 0; i <byteArray.length;i++){
-            System.out.print(Byte.toString(byteArray[i]) + "\t");
-        }
-        System.out.println("|");
-    }
-    private byte[] bytecopy(byte[] src, int offset, int length) throws InvalidParameterException{
-        int diff = (src.length - offset);
-        if (diff < 0){
-            throw new InvalidParameterException("Cannot specify an offset beyond the end of the array!");
-        }else if (diff < length){
-            throw new InvalidParameterException("Asking me copy from beyond the end of the array, fix either your offset or length argument! diff = "+ diff);
-        }
-        byte[] dest = new byte[length];
-        for (int i = offset, j=0; i < src.length && j < length; i++,j++) {
-            dest[j] = src[i];
-        }
-        return dest;
-    }
+
     /**
      * This method builds a Request Authenticator for use in outgoing RADIUS
      * Access-Request packets as specified in RFC 2865.
