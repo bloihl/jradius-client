@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -194,7 +194,7 @@ public class RadiusClient implements RadiusValues
             retries = RadiusClient.AUTH_LOOP_COUNT;
         }
         byte code = RadiusClient.ACCESS_REQUEST;  //1 byte: code
-        byte identifier = this.getNextIdentifier();  //1 byte: Identifier can be anything, so should not be constant
+        byte identifier = RadiusClient.getNextIdentifier();  //1 byte: Identifier can be anything, so should not be constant
 
         //16 bytes: Request Authenticator
         byte [] requestAuthenticator = this.makeRFC2865RequestAuthenticator();
@@ -351,7 +351,7 @@ public class RadiusClient implements RadiusValues
     private boolean account(byte[] service, String sessionId) throws IOException,
                                         UnknownHostException, RadiusException{
         byte code = RadiusClient.ACCOUNTING_REQUEST;
-        byte identifier = this.getNextIdentifier();
+        byte identifier = RadiusClient.getNextIdentifier();
         if(service.length != 4){
             throw new RadiusException("The service byte array must have a length of 4");
         }
@@ -1229,5 +1229,12 @@ public class RadiusClient implements RadiusValues
         sb.append(this.getSharedSecret());
         sb.append(this.getUserName());
         return sb.toString().hashCode();
+    }
+    protected void closeSocket(){
+        this.socket.close();
+    }
+    public void finalize() throws Throwable{
+        this.closeSocket();
+        super.finalize();
     }
 }
