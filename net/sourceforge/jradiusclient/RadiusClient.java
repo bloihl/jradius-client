@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -677,7 +677,7 @@ public class RadiusClient implements RadiusValues
             this.socketTimeout = socket_timeout;
 	    try{
 		if(null == this.socket) {//prevent NPE
-		    this.socket = new Socket();
+		    this.socket = new DatagramSocket();
 		}
 		this.socket.setSoTimeout(this.socketTimeout);
 	    }catch(SocketException sex){}
