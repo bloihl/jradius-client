@@ -6,11 +6,11 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class UserPasswordAttribute extends RadiusAttribute {
     /**
-     * 
+     * Constructs a new UserPasswordAttribute for use in RadiusPackets
      * @param plaintext
      * @throws InvalidParameterException
      */
@@ -18,7 +18,7 @@ public class UserPasswordAttribute extends RadiusAttribute {
         super (RadiusAttributeValues.USER_PASSWORD, plaintext.getBytes());
     }
     /**
-     * 
+     * Constructs a new UserPasswordAttribute for use in RadiusPackets
      * @param plaintext
      * @throws InvalidParameterException
      */
