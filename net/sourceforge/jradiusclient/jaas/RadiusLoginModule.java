@@ -21,7 +21,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * This is an implementation of javax.security.auth.spi.LoginModule specific to
  * using a RADIUS Server for authentication.
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class RadiusLoginModule implements LoginModule {
 
@@ -100,7 +100,7 @@ public class RadiusLoginModule implements LoginModule {
         return true;
     }
     /**
-     * Initialize this <code>LoginModule</code>.<br>
+     * Initialize this <code>LoginModule</code>.
      * This method is called by the LoginContext after this LoginModule has
      * been instantiated. The purpose of this method is to initialize this
      * LoginModule with the relevant information. If this LoginModule does not
