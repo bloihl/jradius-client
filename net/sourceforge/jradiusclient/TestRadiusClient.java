@@ -7,12 +7,13 @@ import java.io.BufferedInputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -64,136 +65,79 @@ public class TestRadiusClient{
             TestRadiusClient.log(getUsage());
             System.exit(5);
         }
-        String userName, userPass, authMethod;
+        String userName = null, userPass = null, authMethod = null;
         boolean attributes = false;
         BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
         try{
             while(true){
                 attributes = false;
+                RadiusPacket accessRequest = new RadiusPacket(RadiusPacket.ACCESS_REQUEST);
+                RadiusAttribute userNameAttribute;
                 //prompt user for input
                 System.out.print("Username: ");
-                userName = inputReader.readLine();
-                System.out.print("Password:");
+                userNameAttribute = new RadiusAttribute(RadiusAttributeValues.USER_NAME,inputReader.readLine().getBytes());
+                accessRequest.setAttribute(userNameAttribute);
+                System.out.print("Password: ");
                 userPass = inputReader.readLine();
-                System.out.print("Authentication method [PAP | chap]:");
+                System.out.print("Authentication method [PAP | chap]: ");
                 authMethod = inputReader.readLine();
+                if(authMethod.equalsIgnoreCase("chap")){
+                    byte[] chapChallenge = ("my Challenge bytes").getBytes();
+                    accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.CHAP_PASSWORD,chapEncrypt(userPass,chapChallenge)));
+                    accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.CHAP_CHALLENGE,chapChallenge));
+                }else{
+                    accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.USER_PASSWORD,userPass.getBytes()));
+                }
     //            System.out.print("Additional Attributes? [y|N]:");
     //            System.out.print("Attribute Type:");
     //            System.out.print("AttributeValue:");
-    //            try{
-    //                boolean returned = TestRadiusClient.chapAuthenticate(rc, userPass);
-    //                if (returned){
-    //                    TestRadiusClient.log("------------------------------------------------------");
-    //                    /*returned = rc.startAccounting(args[5]);
-    //                    if (returned){
-    //                        TestRadiusClient.log("Accounting start succeeded.");
-    //                    }else{
-    //                        TestRadiusClient.log("Accounting start failed.");
-    //                    }
-    //                    TestRadiusClient.log("------------------------------------------------------");
-    //                    returned = rc.stopAccounting(args[5]);
-    //                    if (returned){
-    //                        TestRadiusClient.log("Accounting stop succeeded.");
-    //                    }else{
-    //                        TestRadiusClient.log("Accounting stop failed.");
-    //                    }
-    //                    */
-    //                    TestRadiusClient.log("------------------------------------------------------");
-    //                }
-    //            }catch(InvalidParameterException ivpex){
-    //                TestRadiusClient.log(ivpex.getMessage());
-    //            }catch(RadiusException rex){
-    //                TestRadiusClient.log(rex.getMessage());
-    //            }
+                RadiusPacket accessResponse = rc.authenticate(accessRequest);
+                switch(accessResponse.getPacketType()){
+                    case RadiusPacket.ACCESS_ACCEPT:
+                        TestRadiusClient.log("User " + userName + " authenticated");
+                        break;
+                    case RadiusPacket.ACCESS_REJECT:
+                        TestRadiusClient.log("User " + userName + " NOT authenticated");
+                        break;
+                    case RadiusPacket.ACCESS_CHALLENGE:
+                        String reply = new String(accessResponse.getAttribute(RadiusAttributeValues.REPLY_MESSAGE).getValue());
+                        TestRadiusClient.log("User " + userName + " Challenged with " + reply);
+                        break;
+                    default:
+                        TestRadiusClient.log("Whoa, what kind of RadiusPacket is this " + accessResponse.getPacketType());
+                        break;
+                }
             }
+        }catch(InvalidParameterException ivpex){
+            TestRadiusClient.log(ivpex.getMessage());
+        }catch(RadiusException rex){
+            TestRadiusClient.log(rex.getMessage());
         }catch(IOException ioex){
-            
+            TestRadiusClient.log(ioex.getMessage());
         }
     }
-    public static boolean authenticate(RadiusClient rc, String userPass) throws InvalidParameterException,
-    java.net.UnknownHostException, java.io.IOException, RadiusException, NoSuchAlgorithmException{
-        int returnCode;
-        returnCode = rc.authenticate(userPass);
-        boolean returned = false;
-        TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        switch (returnCode){
-        case RadiusClient.ACCESS_ACCEPT:
-            TestRadiusClient.log("Authenticated");
-            returned = true;
-            break;
-        case RadiusClient.ACCESS_REJECT:
-            TestRadiusClient.log("Not Authenticated");
-            returned = false;
-            break;
-        case RadiusClient.ACCESS_CHALLENGE:
-            TestRadiusClient.log(rc.getChallengeMessage());
-            //wait for user input
-            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-            userPass = br.readLine();
-            returned = TestRadiusClient.authenticate(rc, userPass, callingStationId);
-            break;
-        default:
-            TestRadiusClient.log("How the hell did we get here?");
-            returned = false;
-            break;
-        }
-        TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        return returned;
-    }
-    public static boolean chapAuthenticate(RadiusClient rc, String userPass) throws InvalidParameterException,
-    java.net.UnknownHostException, java.io.IOException, RadiusException, NoSuchAlgorithmException{
-        int returnCode;
+    private static byte[] chapEncrypt(String plainText, byte[] chapChallenge){
         //pretend we are a client who is encrypting his password with a random
         //challenge from the NAS, see RFC 2865 section 2.2
-        String chapChallenge = new String("myChallenge");
         //generate next chapIdentifier
-        byte chapIdentifier = (byte)1;
-        MessageDigest md5MessageDigest = MessageDigest.getInstance("MD5");
-        md5MessageDigest.reset();
-        md5MessageDigest.update(chapIdentifier);
-        md5MessageDigest.update(userPass.getBytes());
-        byte[] chapResponse = md5MessageDigest.digest(chapChallenge.getBytes());
-        //now we are the NAS, composing the CHAP-Password Attribute, which consists
-        //of the chapIdentifier byte followed by the 16 byte output of the MD5
-        //algorithm received "over the wire" from the user, this is arguably the
-        //place for a method in the RadiusClient class
-        //puiblic void setChapPassword(int chapIdent, byte[] chapResponse,ByteArrayOutputStream requestAttributes){
-        byte[] chapPassword = new byte[17];
-        chapPassword[0] = chapIdentifier;
-        System.arraycopy(chapResponse,0,chapPassword,1,16);
-        //now set userPass to "" to avoid sending it over the wire
-        userPass = "";
-        ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
-        //add CHAP attributes
-        rc.setUserAttribute(RadiusAttributeValues.CHAP_PASSWORD, chapPassword, reqAttributes);
-        rc.setUserAttribute(RadiusAttributeValues.CHAP_CHALLENGE, chapChallenge.getBytes(), reqAttributes);
-        returnCode = rc.authenticate(userPass, reqAttributes);
-
-        boolean returned = false;
-        TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        switch (returnCode){
-        case RadiusClient.ACCESS_ACCEPT:
-            TestRadiusClient.log("Authenticated");
-            returned = true;
-            break;
-        case RadiusClient.ACCESS_REJECT:
-            TestRadiusClient.log("Not Authenticated");
-            returned = false;
-            break;
-        case RadiusClient.ACCESS_CHALLENGE:
-            TestRadiusClient.log(rc.getChallengeMessage());
-            //wait for user input
-            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-            userPass = br.readLine();
-            returned = TestRadiusClient.authenticate(rc, userPass, callingStationId);
-            break;
-        default:
-            TestRadiusClient.log("How the hell did we get here?");
-            returned = false;
-            break;
+        byte chapIdentifier = (byte)1;//todo randomize
+        byte[] chapResponse = plainText.getBytes();// if we get a exception we will send back plaintext
+        try{
+            MessageDigest md5MessageDigest = MessageDigest.getInstance("MD5");
+            md5MessageDigest.reset();
+            md5MessageDigest.update(chapIdentifier);
+            md5MessageDigest.update(plainText.getBytes());
+            chapResponse = md5MessageDigest.digest(chapChallenge);
+            //now we are the NAS, composing the CHAP-Password Attribute, which consists
+            //of the chapIdentifier byte followed by the 16 byte output of the MD5
+            //algorithm received "over the wire" from the user
+            byte[] chapPassword = new byte[17];
+            chapPassword[0] = chapIdentifier;
+            System.arraycopy(chapResponse,0,chapPassword,1,16);
+        }catch(NoSuchAlgorithmException nsaex){
+            TestRadiusClient.log(nsaex.getMessage());
         }
-        TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        return returned;
+        return chapResponse;
     }
     private static void log(String message)
     {
