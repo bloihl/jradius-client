@@ -10,7 +10,7 @@ package net.sourceforge.jradiusclient;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public interface RadiusAttributeValues
 {
@@ -94,7 +94,7 @@ public interface RadiusAttributeValues
     public static final int FRAMED_POOL			= 88;
     /* *******************  Constant Attribute Types  **************************/
 
-    /* ******************  Constant Attribute Types  *************************/
+    /* ******************  Constant Attribute Values  *************************/
     // Service-Type or User Types
     public static final int LOGIN				=  1;
     public static final int FRAMED				=  2;
@@ -164,7 +164,7 @@ public interface RadiusAttributeValues
     public static final int WIRELESS_OTHER	= 18;
     public static final int WIRELESS_IEEE_802_11	= 19;
 
-    /* ******************    Constant Attribute Types  *************************/
+    /* ******************    Constant Attribute Values  *************************/
     /* *****************  Attributes and sub attributes for SIP ***************/
 
      // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
