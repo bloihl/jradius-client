@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.32 $
+ * @version $Revision: 1.33 $
  */
 public class RadiusClient
 {
@@ -798,8 +798,6 @@ public class RadiusClient
             }
             
             RadiusPacket responsePacket = new RadiusPacket(returnCode,identifierByte);
-        
-        
             //now parse out the responseAttributeBytes into the responseAttributes hashtable
             int attributesLength = responseAttributeBytes.length;
             if (attributesLength > 0){
