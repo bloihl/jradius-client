@@ -7,7 +7,7 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class ChapPasswordAttribute extends RadiusAttribute {
     /**
@@ -25,10 +25,12 @@ public class ChapPasswordAttribute extends RadiusAttribute {
      * @throws InvalidParameterException
      */
     public ChapPasswordAttribute(final byte identifier, final byte[] chapEncryptedPassword) throws InvalidParameterException{
+        this( combineIdAndPassword(identifier,chapEncryptedPassword));
+    }
+    private static byte[] combineIdAndPassword(final byte identifier, final byte[] chapEncryptedPassword){
         byte[] identifierAndChapEncryptedPassword = new byte[1+chapEncryptedPassword.length];
         identifierAndChapEncryptedPassword[0] = identifier;
-        System.arraycopy(identifierAndChapEncryptedPassword, 0, attributeBytes, 1, identifierAndChapEncryptedPassword.length);
-        this( identifierAndChapEncryptedPassword);
+        System.arraycopy(chapEncryptedPassword,0,identifierAndChapEncryptedPassword, 1, chapEncryptedPassword.length);
+        return identifierAndChapEncryptedPassword;
     }
-
 }
