@@ -6,16 +6,16 @@ import java.io.ByteArrayOutputStream;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
-        return "usage: RadiusClient server authPort acctPort secret user password calling-station-id";
+        return "usage: RadiusClient server authPort acctPort secret user password [calling-station-id]";
     }
 
     public static void main(String [] args)
     {
-        if (args.length < 7)
+        if ((args.length < 6) || (args.length > 7))
         {
             TestRadiusClient.log(getUsage());
             System.exit(2);
@@ -49,7 +49,10 @@ public class TestRadiusClient{
             System.exit(6);
         }
         String userPass = args[5];
-        byte[] callingStationId = args[6].getBytes();
+        byte[] callingStationId = null;
+        if(args.length > 6 ){//the seventh one should be calling station ID
+            callingStationId = args[6].getBytes();
+        }
         try{
             boolean returned = TestRadiusClient.authenticate(rc, userPass, callingStationId);
             if (returned){
@@ -81,13 +84,18 @@ public class TestRadiusClient{
     }
     public static boolean authenticate(RadiusClient rc, String userPass,  byte[] callingStationId) throws InvalidParameterException,
     java.net.UnknownHostException, java.io.IOException, RadiusException{
-        ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
-        try{
-            rc.setUserAttribute(RadiusClient.CALLED_STATION_ID,callingStationId, reqAttributes);
-        }catch(InvalidParameterException ivpex){
-            System.out.println(ivpex);
+        int returnCode;
+        if(callingStationId != null){
+            ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
+            try{
+                rc.setUserAttribute(RadiusClient.CALLING_STATION_ID, callingStationId, reqAttributes);
+            }catch(InvalidParameterException ivpex){
+                System.out.println(ivpex);
+            }
+            returnCode = rc.authenticate(userPass, reqAttributes);
+        }else{
+            returnCode = rc.authenticate(userPass);
         }
-        int returnCode = rc.authenticate(userPass, reqAttributes);
         boolean returned = false;
         TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         switch (returnCode){
