@@ -10,9 +10,9 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.1 $
  */
-public class PapRadiusPacket extends RadiusPacket {
+public class PapAccessRequest extends RadiusPacket {
     private boolean initialized = false;
     /**
      * 
@@ -20,7 +20,7 @@ public class PapRadiusPacket extends RadiusPacket {
      * @param plaintextPassword
      * @throws InvalidParameterException
      */
-    public PapRadiusPacket(final String userName, final String plaintextPassword )
+    public PapAccessRequest(final String userName, final String plaintextPassword )
             throws InvalidParameterException{
         this(userName,plaintextPassword.getBytes());
     }
@@ -30,7 +30,7 @@ public class PapRadiusPacket extends RadiusPacket {
      * @param plaintextPassword
      * @throws InvalidParameterException
      */
-    public PapRadiusPacket(final String userName, final byte[] plaintextPassword )
+    public PapAccessRequest(final String userName, final byte[] plaintextPassword )
             throws InvalidParameterException{
         super (ACCESS_REQUEST);
         setAttribute(new UserNameAttribute(userName));

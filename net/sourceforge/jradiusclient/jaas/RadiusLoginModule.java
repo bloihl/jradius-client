@@ -10,7 +10,7 @@ import javax.security.auth.login.LoginException;
 import net.sourceforge.jradiusclient.RadiusAttributeValues;
 import net.sourceforge.jradiusclient.RadiusClient;
 import net.sourceforge.jradiusclient.RadiusPacket;
-import net.sourceforge.jradiusclient.packets.PapRadiusPacket;
+import net.sourceforge.jradiusclient.packets.PapAccessRequest;
 import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 import net.sourceforge.jradiusclient.exception.RadiusException;
 
@@ -18,7 +18,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * This is an implementation of javax.security.auth.spi.LoginModule specific to
  * using a RADIUS Server for authentication.
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class RadiusLoginModule implements LoginModule {
 
@@ -180,7 +180,7 @@ public class RadiusLoginModule implements LoginModule {
                                                  radiusCallback.getAuthPort(),
                                                  radiusCallback.getAcctPort(),
                                                  radiusCallback.getSharedSecret());
-            RadiusPacket accessRequest = new PapRadiusPacket(userName,String.valueOf(userPassword));
+            RadiusPacket accessRequest = new PapAccessRequest(userName,String.valueOf(userPassword));
             this.authenticate(accessRequest, radiusCallback.getNumRetries() );
         }catch(InvalidParameterException ivpex){
             StringBuffer sb1 = new StringBuffer("Configuration of the RADIUS client is incorrect. ");
@@ -246,7 +246,7 @@ public class RadiusLoginModule implements LoginModule {
                     //do this first so that we are actually incrementing the BEFORE
                     //we get recursive
                     this.challengedAttempts++;
-                    RadiusPacket challengeResponse = new PapRadiusPacket(userName,String.valueOf(password));
+                    RadiusPacket challengeResponse = new PapAccessRequest(userName,String.valueOf(password));
                     this.authenticate(challengeResponse, 1);
                     break;
                 default:
