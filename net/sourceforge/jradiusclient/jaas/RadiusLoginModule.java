@@ -13,6 +13,9 @@ import javax.security.auth.spi.LoginModule;
 import javax.security.auth.login.CredentialExpiredException;
 //import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
+import net.sourceforge.jradiusclient.RadiusPacket;
+import net.sourceforge.jradiusclient.RadiusAttribute;
+import net.sourceforge.jradiusclient.RadiusAttributeValues;
 import net.sourceforge.jradiusclient.RadiusClient;
 import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 import net.sourceforge.jradiusclient.exception.RadiusException;
@@ -21,7 +24,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * This is an implementation of javax.security.auth.spi.LoginModule specific to
  * using a RADIUS Server for authentication.
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class RadiusLoginModule implements LoginModule {
 
@@ -182,9 +185,8 @@ public class RadiusLoginModule implements LoginModule {
             this.radiusClient = new RadiusClient(radiusCallback.getHostName(),
                                                  radiusCallback.getAuthPort(),
                                                  radiusCallback.getAcctPort(),
-                                                 radiusCallback.getSharedSecret(),
-                                                 this.userName,
-                                                 radiusCallback.getTimeout());
+                                                 radiusCallback.getSharedSecret());
+            RadiusPacket accessRequest = new RadiusPacket();
             this.authenticate(userPassword, radiusCallback.getCallingStationID(), radiusCallback.getNumRetries() );
         }catch(InvalidParameterException ivpex){
             StringBuffer sb1 = new StringBuffer("Configuration of the RADIUS client is incorrect. ");
