@@ -2,9 +2,10 @@ package net.sourceforge.jradiusclient;
 
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
+import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class TestRadiusClient{
     public static void main(String [] args)
@@ -35,7 +36,7 @@ public class TestRadiusClient{
             TestRadiusClient.log("Unable to create Radius Client due to failure to create MD5 MessageDigest!");
             TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user [password]");
             System.exit(5);
-        }catch(com.flatrock.util.InvalidParameterException ivpex){
+        }catch(InvalidParameterException ivpex){
             TestRadiusClient.log("Unable to create Radius Client due to invalid parameter!");
             TestRadiusClient.log(ivpex.getMessage());
             TestRadiusClient.log("usage: RadiusClient server authPort acctPort secret user [password]");
@@ -59,17 +60,17 @@ public class TestRadiusClient{
                 }
                 TestRadiusClient.log("------------------------------------------------------");
             }
-        }catch(com.flatrock.util.InvalidParameterException ivpex){
+        }catch(InvalidParameterException ivpex){
             TestRadiusClient.log(ivpex.getMessage());
         }catch(java.net.UnknownHostException uhex){
             TestRadiusClient.log(uhex.getMessage());
         }catch(java.io.IOException ioex){
             TestRadiusClient.log(ioex.getMessage());
-        }catch(com.flatrock.util.radius.RadiusException rex){
+        }catch(RadiusException rex){
             TestRadiusClient.log(rex.getMessage());
         }
     }
-    public static boolean authenticate(RadiusClient rc, String userPass) throws com.flatrock.util.InvalidParameterException,
+    public static boolean authenticate(RadiusClient rc, String userPass) throws InvalidParameterException,
     java.net.UnknownHostException, java.io.IOException, RadiusException{
         int returnCode = rc.authenticate(userPass);
         boolean returned = false;
