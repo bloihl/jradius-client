@@ -1,4 +1,4 @@
-package com.flatrock.security.auth;
+package net.sourceforge.jradiusclient.jaas;
 
 import java.io.IOException;
 
@@ -16,7 +16,7 @@ import javax.security.auth.login.LoginException;
  * Description:
  * Copyright:    Copyright (c) 2003
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class RadiusLoginHandler implements CallbackHandler {
 
@@ -94,8 +94,8 @@ public class RadiusLoginHandler implements CallbackHandler {
         }else if (callback instanceof TextInputCallback) {
             // this code assumes that there will only be one TextInputCallback and it is used for the client IP
             ((TextInputCallback)callback).setText(clientIP);
-        }else if (callback[i] instanceof RadiusCallback) {
-			RadiusCallback radiusCallback = (RadiusCallback)callback[i];
+        }else if (callback instanceof RadiusCallback) {
+			RadiusCallback radiusCallback = (RadiusCallback)callback;
 			radiusCallback.setHostName(this.hostName);
 			radiusCallback.setSharedSecret(this.sharedSecret);
 			radiusCallback.setAuthPort(this.authPort);
