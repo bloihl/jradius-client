@@ -22,16 +22,24 @@
     </javac>
   </target>
 
-  <target name="dist" depends="compile">
+  <target name="dist" depends="compile,doc">
     <mkdir dir="${dist}" />
 
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
     <jar jarfile="${dist}/jradius-client.jar" basedir="${build}" />
     <copy file="LICENSE" todir="${dist}"/>
     <copy file="README" todir="${dist}"/>
-    <tar tarfile="jradius-client-${version}.tar" basedir="${dist}"/>
+    <copy todir="${dist}/${doc}">
+         <fileset dir="${doc}"/>
+    </copy>
+    <tar tarfile="jradius-client-${version}.tar" basedir="${dist}/" />
     <gzip zipfile="jradius-client-${version}.tar.gz" src="jradius-client-${version}.tar"/>
+    <delete dir="${dist}/${doc}"/>
     <delete file="jradius-client-${version}.tar"/>
+
+    <tar tarfile="jradius-client-${version}.src.tar" basedir="${src}" includes="net/,${doc}/,LICENSE,README,build.xml" excludes="**/CVS"/>
+    <gzip zipfile="jradius-client-${version}.src.tar.gz" src="jradius-client-${version}.src.tar"/>
+    <delete file="jradius-client-${version}.src.tar"/>
   </target>
 
   <target name="doc">
@@ -49,7 +57,9 @@
     <!-- Delete the ${build} and ${dist} directory trees -->
     <delete dir="${build}" />
     <delete dir="${dist}" />
+    <delete dir="${doc}" />
     <delete file="jradius-client-${version}.tar.gz"/>
+    <delete file="jradius-client-${version}.src.tar.gz"/>
   </target>
 
   <target name="proper" depends="clean,dist" />
