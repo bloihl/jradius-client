@@ -16,7 +16,7 @@ import net.sourceforge.jradiusclient.packets.*;
 import net.sourceforge.jradiusclient.util.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -71,6 +71,7 @@ public class TestRadiusClient{
         ChapUtil chapUtil = new ChapUtil();
         BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
         basicAuthenticate(rc, chapUtil, inputReader);
+        advAuthenticate(rc, chapUtil, inputReader);
     }
     private static void basicAuthenticate(final RadiusClient rc,
             final ChapUtil chapUtil,
