@@ -20,17 +20,33 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
 
 /**
  *
- * This class implements the NAS characteristics of the RADIUS protocol as
- * specified in RFC 2865 and RFC 2866.
+ * This class provides basic functionality required to implement a NAS as
+ * defined by the RADIUS protocol as specified in RFC 2865 and RFC 2866. 
+ * This implementation is stateless and not thread safe, i.e. since the 
+ * user name could be changed by the current thread or any other thread,
+ * it is difficult to ensure that the responseAttributes correlate to the 
+ * request we think we are dealing with. It is up to the user of this class 
+ * to ensure these things at this point. A future release may change this class
+ * to a stateful, threadsafe object, but it works for now. Users of this class 
+ * must also manage building their own request attributes and submitting them with 
+ * their call to authenticate. For example a programmer using this library, wanting
+ * to do chap authentication needs to generate the random challenge, send it to
+ *  the user, who generates the MD5 of 
+ * <UL><LI>a self generated CHAP identifier (a byte)</LI> 
+ * <LI>their password</LI> 
+ * <LI>and the CHAP challenge.</LI></UL>(see RFC 2865 section 2.2) The user 
+ * software returns the CHAP Identifier and the MD5 result and the programmer using RadiusClient
+ * sets that as the CHAP Password. The programmer also sets the CHAP-Challenge attribute and
+ * sends that to the Radius Server for authentication.
  *
- * Special Thanks to the original creator of the "RadiusClient"
+ * <BR>Special Thanks to the original creator of the "RadiusClient"
  * <a href="http://augiesoft.com/java/radius/">August Mueller </a>
  * http://augiesoft.com/java/radius/ and to
  * <a href="http://sourceforge.net/projects/jradius-client">Aziz Abouchi</a>
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.22 $
+ * @version $Revision: 1.23 $
  */
 public class RadiusClient implements RadiusValues
 {

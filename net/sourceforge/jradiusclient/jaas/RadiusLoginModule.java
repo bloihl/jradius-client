@@ -9,9 +9,9 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.spi.LoginModule;
-import javax.security.auth.login.AccountExpiredException;
+//import javax.security.auth.login.AccountExpiredException;
 import javax.security.auth.login.CredentialExpiredException;
-import javax.security.auth.login.FailedLoginException;
+//import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import net.sourceforge.jradiusclient.RadiusClient;
 import net.sourceforge.jradiusclient.exception.InvalidParameterException;
@@ -21,7 +21,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * This is an implementation of javax.security.auth.spi.LoginModule specific to
  * using a RADIUS Server for authentication.
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class RadiusLoginModule implements LoginModule {
 
@@ -76,7 +76,7 @@ public class RadiusLoginModule implements LoginModule {
      * method associates relevant Principals and Credentials with the Subject
      * located in the LoginModule. If this LoginModule's own authentication
      * attempt failed, then this method cleans up any internal state saved by
-     * the login method. (TODO perform
+     * the login method. ( poss. improvement: perform
      * a RADIUS accounting request to notify RADIUS server of login time.)
      * @return boolean true if this method succeeds false if this
      *                      <code>LoginModule</code> should be ignored
@@ -281,7 +281,7 @@ public class RadiusLoginModule implements LoginModule {
     }
 
     /**
-     * This method logs out a Subject (TODO perform
+     * This method logs out a Subject (Poss. Improvement: perform
      * a RADIUS accounting request to notify RADIUS server of logout time.)
      * @return boolean return true if the logout was successful, False if
      *                      this <code>LoginModule</code> should be ignored
