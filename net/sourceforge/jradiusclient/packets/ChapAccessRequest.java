@@ -12,7 +12,7 @@ import net.sourceforge.jradiusclient.util.ChapUtil;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class ChapAccessRequest extends RadiusPacket {
     private static final ChapUtil chapUtil = new ChapUtil();
@@ -84,11 +84,13 @@ public class ChapAccessRequest extends RadiusPacket {
      * @param radiusAttribute the attribute to validate
      * @throws InvalidParameterException if the RadiusAttribute does not pass validation
      */
-    public void validateAttribute(RadiusAttribute radiusAttribute) throws InvalidParameterException{
+    public void validateAttribute(final RadiusAttribute radiusAttribute) throws InvalidParameterException{
         if ((initialized) && (radiusAttribute.getType() == RadiusAttributeValues.USER_NAME ||
-                radiusAttribute.getType() == RadiusAttributeValues.CHAP_PASSWORD ||
-                radiusAttribute.getType() == RadiusAttributeValues.CHAP_CHALLENGE)){
+                    radiusAttribute.getType() == RadiusAttributeValues.CHAP_PASSWORD ||
+                    radiusAttribute.getType() == RadiusAttributeValues.CHAP_CHALLENGE)){
             throw new InvalidParameterException ("Already initialized, cannot reset username, chap password or chap challenge.");
+        }else if (radiusAttribute.getType() == RadiusAttributeValues.USER_PASSWORD){
+            throw new InvalidParameterException ("Already initialized, cannot set USER_PASSWORD in a CHAP Access Request.");
         }
     }
 }
