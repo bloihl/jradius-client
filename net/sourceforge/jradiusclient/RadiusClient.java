@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -38,6 +38,9 @@ public class RadiusClient implements RadiusValues
     private static byte [] NAS_IP;
     private static final int AUTH_LOOP_COUNT = 3;
     private static final int ACCT_LOOP_COUNT = 3;
+    private static final int DEFAULT_AUTH_PORT = 1812;
+    private static final int DEFAULT_ACCT_PORT = 1813;
+    private static final int DEFAULT_SOCKET_TIMEOUT = 6000;
     private static Object nextIdentifierLock = new Object();
     private static byte nextIdentifier = (byte)0;
     private String userName = "";
@@ -48,10 +51,10 @@ public class RadiusClient implements RadiusValues
     //the elements in the Response packet from the Radius Server may occur
     //multiple times, and we need to store all of them. This needs to be FIXED!
     private Hashtable responseAttributes = new Hashtable();
-    private int authenticationPort = 1812;
-    private int accountingPort = 1813;
+    private int authenticationPort = DEFAULT_AUTH_PORT;
+    private int accountingPort = DEFAULT_ACCT_PORT;
     private DatagramSocket socket = null;
-    private int socketTimeout = 6000;
+    private int socketTimeout = DEFAULT_SOCKET_TIMEOUT;
     private MessageDigest md5MessageDigest;
     /*
      * Static Initializer
@@ -84,7 +87,7 @@ public class RadiusClient implements RadiusValues
      */
     public RadiusClient(String hostname, String sharedSecret, String userName)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, 1812, 1813, sharedSecret, userName, 6000);
+        this(hostname, DEFAULT_AUTH_PORT, DEFAULT_ACCT_PORT, sharedSecret, userName, DEFAULT_SOCKET_TIMEOUT);
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
@@ -104,7 +107,7 @@ public class RadiusClient implements RadiusValues
      */
     public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, authPort, acctPort, sharedSecret, userName, 6000);
+        this(hostname, authPort, acctPort, sharedSecret, userName, DEFAULT_SOCKET_TIMEOUT);
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
