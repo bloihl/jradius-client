@@ -6,9 +6,9 @@ import java.io.IOException;
 /**
  * <p>Released under the LGPL</p>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
-public class RadiusAttribute implements RadiusValues{
+public class RadiusAttribute implements RadiusAttributeValues{
     private static final int HEADER_LENGTH = 2;
     private byte[] packetBytes;
     /**

@@ -46,9 +46,9 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
-public class RadiusClient implements RadiusValues
+public class RadiusClient implements RadiusAttributeValues
 {
     private static byte [] NAS_ID;
     private static byte [] NAS_IP;
@@ -209,7 +209,7 @@ public class RadiusClient implements RadiusValues
         }else if (retries == 0){
             retries = RadiusClient.AUTH_LOOP_COUNT;
         }
-        byte code = RadiusClient.ACCESS_REQUEST;  //1 byte: code
+        byte code = RadiusPacket.ACCESS_REQUEST;  //1 byte: code
         byte identifier = RadiusClient.getNextIdentifier();  //1 byte: Identifier can be anything, so should not be constant
 
         //16 bytes: Request Authenticator
@@ -244,7 +244,7 @@ public class RadiusClient implements RadiusValues
         // length of code + Identifier + Length + Request Authenticator) +
         // each attribute has a length computed as follows: 1 byte for the type +
         // 1 byte for the length of the attribute + length of attribute bytes
-        short length = (short) (RadiusClient.RADIUS_HEADER_LENGTH + requestAttributes.size() );
+        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.size() );
 
         DatagramPacket packet =
             this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, requestAttributes.toByteArray());
@@ -252,14 +252,14 @@ public class RadiusClient implements RadiusValues
         int responseCode = 0;
         if ((packet = this.sendReceivePacket(packet, retries)) != null){
             switch(this.checkRadiusPacket(packet,identifier, requestAuthenticator)){
-            case RadiusClient.ACCESS_ACCEPT:
-                responseCode = RadiusClient.ACCESS_ACCEPT;
+            case RadiusPacket.ACCESS_ACCEPT:
+                responseCode = RadiusPacket.ACCESS_ACCEPT;
                 break;
-            case RadiusClient.ACCESS_REJECT:
-                responseCode = RadiusClient.ACCESS_REJECT;
+            case RadiusPacket.ACCESS_REJECT:
+                responseCode = RadiusPacket.ACCESS_REJECT;
                 break;
-            case RadiusClient.ACCESS_CHALLENGE:
-                responseCode = RadiusClient.ACCESS_CHALLENGE;
+            case RadiusPacket.ACCESS_CHALLENGE:
+                responseCode = RadiusPacket.ACCESS_CHALLENGE;
                 break;
             default:
                 throw new RadiusException("Invalid response recieved from the RADIUS Server.");
@@ -455,7 +455,7 @@ public class RadiusClient implements RadiusValues
     private boolean account(byte[] service, String sessionId, ByteArrayOutputStream reqAttributes)
             throws IOException,UnknownHostException, RadiusException{
                 
-        byte code = RadiusClient.ACCOUNTING_REQUEST;
+        byte code = RadiusPacket.ACCOUNTING_REQUEST;
         byte identifier = RadiusClient.getNextIdentifier();
         if (service.length != 4){
             throw new RadiusException("The service byte array must have a length of 4");
@@ -482,7 +482,7 @@ public class RadiusClient implements RadiusValues
         // length of code + Identifier + Length + Request Authenticator) +
         // each attribute has a length computed as follows: 1 byte for the type +
         // 1 byte for the length of the attribute + length of attribute bytes
-        short length = (short) (RadiusClient.RADIUS_HEADER_LENGTH + requestAttributes.size());
+        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.size());
         byte[] requestAuthenticator =
             this.makeRFC2866RequestAuthenticator(code, identifier, length, requestAttributes.toByteArray());
         
@@ -490,7 +490,7 @@ public class RadiusClient implements RadiusValues
             this.composeRadiusPacket(this.getAcctPort(), code, identifier, length, requestAuthenticator, requestAttributes.toByteArray());
         //send the request / recieve the response
         if ((packet = this.sendReceivePacket(packet, RadiusClient.ACCT_LOOP_COUNT)) != null) {
-            if (RadiusClient.ACCOUNTING_RESPONSE == this.checkRadiusPacket(packet, identifier, requestAuthenticator)) {
+            if (RadiusPacket.ACCOUNTING_RESPONSE == this.checkRadiusPacket(packet, identifier, requestAuthenticator)) {
                 return true;
             }
         }

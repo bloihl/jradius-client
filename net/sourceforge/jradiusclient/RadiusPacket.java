@@ -12,23 +12,53 @@ import java.util.List;
 /**
  * <p>Released under the LGPL</p>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class RadiusPacket {
+    public static final int MIN_PACKET_LENGTH       = 20;
+    public static final int MAX_PACKET_LENGTH       = 4096;
+    /**
+     *RADIUS_HEADER_LENGTH is 20 bytes (corresponding to
+     *1 byte for code + 1 byte for Identifier + 2 bytes for Length + 16 bytes for Request Authenticator)
+     *It is not a coincidence that it is the same as the MIN_PACKET_LENGTH
+     **/
+    public static final short RADIUS_HEADER_LENGTH  = 20;
+    public static final String EMPTYSTRING = "";
+
+    /* ***************  Constant Packet Type Codes  **************************/
+    public static final int ACCESS_REQUEST      = 1;
+    public static final int ACCESS_ACCEPT       = 2;
+    public static final int ACCESS_REJECT       = 3;
+    public static final int ACCOUNTING_REQUEST  = 4;
+    public static final int ACCOUNTING_RESPONSE = 5;
+    public static final int ACCOUNTING_STATUS   = 6;
+    public static final int PASSWORD_REQUEST    = 7;
+    public static final int PASSWORD_ACCEPT     = 8;
+    public static final int PASSWORD_REJECT     = 9;
+    public static final int ACCOUNTING_MESSAGE  = 10;
+    public static final int ACCESS_CHALLENGE    = 11;
+    public static final int STATUS_SERVER       = 12;   // experimental
+    public static final int STATUS_CLIENT       = 13;   // experimental
+    public static final int RESERVED            = 255;
+    /* ******************  Constant Packet Type Codes  *************************/
+    
+    private int packetType = 0;
+    private int packetIdentifier = 0;
     private Map attributes;
     /**
-     * builds a RadiusPacket with no Attributes set
+     * builds a type RadiusPacket with no Attributes set
      */
-    public RadiusPacket(){
+    public RadiusPacket(final int type){
         //most packets will be at least 4 attributes
         this.attributes = new HashMap();
     }
     /**
      * Builds a RadiusPacket with a predefined set of attributes
+     * @param type int a PacketType to send.
      * @param attributeList a list of RadiusAttribute objects to initialize this RadiusPacket with
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
-    public RadiusPacket(List attributeList) throws InvalidParameterException{
+    public RadiusPacket(final int type, final List attributeList) throws InvalidParameterException{
         if((null == attributeList)||(attributeList.size() == 0)){
             throw new InvalidParameterException("Attribute List was null");
         }
