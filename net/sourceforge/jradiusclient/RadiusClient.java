@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -144,10 +144,32 @@ public class RadiusClient implements RadiusValues
      */
     public int authenticate(String userPass, ByteArrayOutputStream requestAttributes)
     throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
+        return this.authenticate(userPass, requestAttributes, RadiusClient.AUTH_LOOP_COUNT);
+    }
+    /**
+     * This method performs the job of authenticating the specified user against
+     * the radius server.
+     * @param userPass java.lang.String
+     * @param requestAttributes ByteArrayOutputStream
+     * @param int retries must be zero or greater if it is zero default value of 3 will be used
+     * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
+     *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     * @exception net.sourceforge.jradiusclient.exception.RadiusException
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
+     */
+    public int authenticate(String userPass, ByteArrayOutputStream requestAttributes, int retries)
+    throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
         //test for validity of userPass
         if (userPass == null){
             throw new InvalidParameterException("Password can not be null!");
         }//else password is a-ok for passing to RADIUS Server
+        if(retries < 0){
+            throw new InvalidParameterException("retries must be zero or greater!");
+        }else if (retries == 0){
+            retries = RadiusClient.AUTH_LOOP_COUNT;
+        }
         byte code = RadiusClient.ACCESS_REQUEST;  //1 byte: code
         byte identifier = this.getNextIdentifier();  //1 byte: Identifier can be anything, so should not be constant
 
@@ -189,7 +211,7 @@ public class RadiusClient implements RadiusValues
             this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, requestAttributes.toByteArray());
         // now send the request and recieve the response
         int responseCode = 0;
-        if ((packet = this.sendReceivePacket(packet, RadiusClient.AUTH_LOOP_COUNT)) != null){
+        if ((packet = this.sendReceivePacket(packet, retries)) != null){
             switch(this.checkRadiusPacket(packet,identifier, requestAuthenticator)){
             case RadiusClient.ACCESS_ACCEPT:
                 responseCode = RadiusClient.ACCESS_ACCEPT;
