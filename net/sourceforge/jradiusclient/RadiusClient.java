@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -858,7 +858,7 @@ public class RadiusClient implements RadiusValues
      * @param attribute byte[] the actual attribute byte array
      * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
      * @throws InvalidParameterException
-     * @author kay michael koehler koehler@remwave.com, koehler@buddy4mac.com, koehler@econo.de
+     * author kay michael koehler koehler@remwave.com, koehler@buddy4mac.com, koehler@econo.de
      */
     public void setUserSubAttribute(int type, int subType, byte [] attribute, ByteArrayOutputStream requestAttributes)
     throws InvalidParameterException {
