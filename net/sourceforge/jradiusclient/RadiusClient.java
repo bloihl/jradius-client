@@ -15,6 +15,7 @@ import java.util.Random;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import net.sourceforge.jradiusclient.exception.InvalidParameterException;
+import net.sourceforge.jradiusclient.exception.RadiusException;
 
 
 /**
@@ -29,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class RadiusClient implements RadiusValues
 {
