@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -520,13 +520,13 @@ public class RadiusClient implements RadiusValues
         }
     }
     /**
-     * This method extracts the Challenge message returned by a RADIUS Server and
+     * This method extracts the reply message returned by a RADIUS Server and
      * supplies it to the user, who should them use it to build a new password
      * and re-authenticate.
      *@return java.lang.String the challenge message to display to the user
      *@exception com.flatrock.util.radius.RadiusException
      */
-    public String getChallengeMessage() throws RadiusException{
+    public String getReplyMessage() throws RadiusException{
         if(this.responseAttributes == null){
             throw new RadiusException("No Response Attributes have been set.");
         }
@@ -536,7 +536,80 @@ public class RadiusClient implements RadiusValues
         }
         return new String(messageBytes);
     }
-
+    /**
+     * This method extracts the Challenge message returned by a RADIUS Server and
+     * supplies it to the user, who should them use it to build a new password
+     * and re-authenticate.
+     *@return java.lang.String the challenge message to display to the user
+     *@exception com.flatrock.util.radius.RadiusException
+     */
+    public String getChallengeMessage() throws RadiusException{
+        return this.getReplyMessage();
+    }
+    /**
+     * This method extracts the SessionTimeout returned by a RADIUS Server
+     *@return java.lang.Integer the session timeout for the user
+     *@exception com.flatrock.util.radius.RadiusException
+     */
+    public Integer getSessionTimeout() throws RadiusException{
+        if(this.responseAttributes == null){
+            throw new RadiusException("No Response Attributes have been set.");
+        }
+        byte[] sessiontimeoutBytes = (byte[])this.responseAttributes.get(new Integer(RadiusClient.SESSION_TIMEOUT));
+        if ((sessiontimeoutBytes == null) || (sessiontimeoutBytes.length == 0)){
+            throw new RadiusException("No Session Timeout has been set.");
+        }
+        return this.attributeBytesToInteger(sessiontimeoutBytes);
+    }
+    /**
+     * This method extracts the Framed IP Address returned by a RADIUS Server
+     *@return java.lang.String the Framed Ip Address
+     *@exception com.flatrock.util.radius.RadiusException
+     */
+    public String getFramedIPAddress() throws RadiusException{
+        if(this.responseAttributes == null){
+            throw new RadiusException("No Response Attributes have been set.");
+        }
+        byte[] ipaddrBytes = (byte[])this.responseAttributes.get(new Integer(RadiusClient.FRAMED_IP_ADDRESS));
+        if ((ipaddrBytes == null) || (ipaddrBytes.length == 0)){
+            throw new RadiusException("No Framed Ip Address has been set.");
+        }
+        return this.attributeBytesToIPAddr(ipaddrBytes);
+    }
+    /**
+     *
+     */
+    private Integer attributeBytesToInteger(byte[] input){
+        int value = 0, tmp =0;
+        for(int i = 0; i<input.length;i++){
+            tmp = input[i] & 0x7F;
+            if((input[i]&80000000) != 0){
+                tmp |=0x80;
+            }
+            value = (256 * value) + tmp;
+        }
+        return new Integer(value);
+    }
+    /**
+     *
+     */
+    private String attributeBytesToIPAddr(byte[] input)throws RadiusException{
+        if (input.length > 4){
+            throw new RadiusException("Invalid IP Address - too many bytes");
+        }
+        StringBuffer ipaddr = new StringBuffer();
+        for(int i =0; i<4;i++){
+            if((input[i]&80000000)!=0){
+                ipaddr.append((input[i] & 0x7F) | 0x80);
+            }else{
+                ipaddr.append((input[i] & 0x7F));
+            }
+            if (i != 3){
+                ipaddr.append(".");
+            }
+        }
+        return ipaddr.toString();
+    }
     /**
      * This method returns the bytes sent in the STATE attribute of the RADIUS
      * Server's response to a request
