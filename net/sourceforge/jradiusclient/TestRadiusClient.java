@@ -16,7 +16,7 @@ import net.sourceforge.jradiusclient.packets.*;
 import net.sourceforge.jradiusclient.util.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -68,12 +68,18 @@ public class TestRadiusClient{
             TestRadiusClient.log(getUsage());
             System.exit(5);
         }
-        String userName = null, userPass = null, authMethod = null;
         ChapUtil chapUtil = new ChapUtil();
-        boolean attributes = false;
         BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
+        basicAuthenticate(rc, chapUtil, inputReader);
+    }
+    private static void basicAuthenticate(final RadiusClient rc,
+            final ChapUtil chapUtil,
+            final BufferedReader inputReader){
         try{
-            while(true){
+            boolean attributes = false, continueTest = true;
+            String userName = null, userPass = null, authMethod = null;
+            System.out.println("Performing tests using basic classes: ");
+            while(continueTest){
                 attributes = false;
                 RadiusPacket accessRequest = new RadiusPacket(RadiusPacket.ACCESS_REQUEST);
                 RadiusAttribute userNameAttribute;
@@ -124,6 +130,11 @@ public class TestRadiusClient{
                         TestRadiusClient.log("Whoa, what kind of RadiusPacket is this " + accessResponse.getPacketType());
                         break;
                 }
+                System.out.print("Another Basic Test [ Y | n ]: ");
+                authMethod = inputReader.readLine();
+                if(authMethod.equalsIgnoreCase("n")){
+                    continueTest = false;
+                }
             }
         }catch(InvalidParameterException ivpex){
             TestRadiusClient.log(ivpex.getMessage());
@@ -132,6 +143,7 @@ public class TestRadiusClient{
         }catch(IOException ioex){
             TestRadiusClient.log(ioex.getMessage());
         }
+
     }
     private static byte[] chapEncrypt(final String plainText,
                                       final byte[] chapChallenge,
