@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -677,7 +677,9 @@ public class RadiusClient implements RadiusValues
             throw new InvalidParameterException("A negative timeout value is not allowed!");
         }else{//everything is a-ok
             this.socketTimeout = socket_timeout;
-	    this.socket.setSOTimeout(this.socketTimeout);
+	    try{
+		this.socket.setSoTimeout(this.socketTimeout);
+	    }catch(SocketException sex){}
         }
     }
     /**
