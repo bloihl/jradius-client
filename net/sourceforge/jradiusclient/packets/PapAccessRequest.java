@@ -10,7 +10,7 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class PapAccessRequest extends RadiusPacket {
     private boolean initialized = false;
@@ -42,9 +42,8 @@ public class PapAccessRequest extends RadiusPacket {
      * @param radiusAttribute
      */
     public void validateAttribute(RadiusAttribute radiusAttribute) throws InvalidParameterException{
-        if ((initialized) && (radiusAttribute.getType() == RadiusAttributeValues.USER_NAME ||
-            radiusAttribute.getType() == RadiusAttributeValues.USER_PASSWORD)){
-            throw new InvalidParameterException ("Already initialized, cannot reset username or password.");
+        if ((initialized) && (radiusAttribute.getType() == RadiusAttributeValues.USER_NAME )){
+            throw new InvalidParameterException ("Already initialized, cannot reset username.");
         }
     }
 }
