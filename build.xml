@@ -31,6 +31,7 @@
     <copy file="README" todir="${dist}"/>
     <tar tarfile="jradius-client-${version}.tar" basedir="${dist}"/>
     <gzip zipfile="jradius-client-${version}.tar.gz" src="jradius-client-${version}.tar"/>
+    <delete file="jradius-client-${version}.tar"/>
   </target>
 
   <target name="doc">
@@ -48,6 +49,7 @@
     <!-- Delete the ${build} and ${dist} directory trees -->
     <delete dir="${build}" />
     <delete dir="${dist}" />
+    <delete file="jradius-client-${version}.tar.gz"/>
   </target>
 
   <target name="proper" depends="clean,dist" />
