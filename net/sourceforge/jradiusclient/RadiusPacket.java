@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -182,4 +182,20 @@ public class RadiusPacket {
             return nextPacketId++;
         }
     }
+//    /**
+//     * This method returns the bytes sent in the STATE attribute of the RADIUS
+//     * Server's response to a request
+//     *@return java.lang.String the challenge message to display to the user
+//     *@exception net.sourceforge.jradiusclient.exception.RadiusException
+//     */
+//    private byte[] getStateAttributeFromResponse() throws RadiusException{
+//        if(this.responseAttributes == null){
+//            throw new RadiusException("No Response Attributes have been set.");
+//        }
+//        byte[] stateBytes = (byte[])this.responseAttributes.get(new Integer(RadiusAttributeValues.STATE));
+//        if ((stateBytes == null) || (stateBytes.length == 0)){
+//            throw new RadiusException("No State Attribute has been set.");
+//        }
+//        return stateBytes;
+//    }
 }

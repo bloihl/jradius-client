@@ -10,7 +10,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.Hashtable;
 import java.util.Random;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -47,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 public class RadiusClient
 {
@@ -59,12 +58,7 @@ public class RadiusClient
     private static final int DEFAULT_ACCT_PORT = 1813;
     private static final int DEFAULT_SOCKET_TIMEOUT = 6000;
     private String sharedSecret = "";
-    private String hostname = "";
-    //This is a weak implementation for Response Attributes as it will only
-    //store the last element put into it in the parsing process, whereas some of
-    //the elements in the Response packet from the Radius Server may occur
-    //multiple times, and we need to store all of them. This needs to be FIXED!
-    private Hashtable responseAttributes = new Hashtable();
+    private InetAddress hostname = null;
     private int authenticationPort = DEFAULT_AUTH_PORT;
     private int accountingPort = DEFAULT_ACCT_PORT;
     private DatagramSocket socket = null;
@@ -98,7 +92,7 @@ public class RadiusClient
      *                              empty string) is passed in.
      */
     public RadiusClient(String hostname, String sharedSecret)
-    throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
+    throws RadiusException, InvalidParameterException{
         this(hostname, DEFAULT_AUTH_PORT, DEFAULT_ACCT_PORT, sharedSecret, DEFAULT_SOCKET_TIMEOUT);
     }
     /**
@@ -117,7 +111,7 @@ public class RadiusClient
      *                              secret can be empty string) is passed in.
      */
     public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret)
-    throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
+    throws RadiusException, InvalidParameterException{
         this(hostname, authPort, acctPort, sharedSecret, DEFAULT_SOCKET_TIMEOUT);
     }
     /**
@@ -127,9 +121,8 @@ public class RadiusClient
      * @param acctPort int the port to use for accounting requests
      * @param sharedSecret java.lang.String
      * @param timeout int the timeout to use when waiting for return packets can't be neg and shouldn't be zero
-     * @exception java.net.SocketException If we could not create the necessary socket
-     * @exception java.security.NoSuchAlgorithmException If we could not get an
-     *                              instance of the MD5 algorithm.
+     * @exception net.sourceforge.jradiusclient.exception.RadiusException If we could not create the necessary socket,
+     * If we could not get an instance of the MD5 algorithm, or the hostname did not pass validation
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If an invalid hostname
      *                              (null or empty string), an invalid
      *                              port ( port < 0 or port > 65536)
@@ -137,14 +130,22 @@ public class RadiusClient
      *                              secret can be empty string) is passed in.
      */
     public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, int sockTimeout)
-    throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
+    throws RadiusException, InvalidParameterException{
         this.setHostname(hostname);
         this.setSharedSecret(sharedSecret);
         //set up the socket for this client
-        this.socket = new DatagramSocket();
+        try{
+            this.socket = new DatagramSocket();
+        }catch(SocketException sex){
+            throw new RadiusException(sex.getMessage());
+        }
         this.setTimeout(sockTimeout);
         //set up the md5 engine
+        try{
         this.md5MessageDigest = MessageDigest.getInstance("MD5");
+        }catch(NoSuchAlgorithmException nsaex){
+            throw new RadiusException(nsaex.getMessage());
+        }
         this.setAuthPort(authPort);
         this.setAcctPort(acctPort);
     }
@@ -160,7 +161,7 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
     public RadiusPacket authenticate(RadiusPacket accessRequest)
-    throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
+    throws RadiusException, InvalidParameterException {
         return this.authenticate(accessRequest, RadiusClient.AUTH_LOOP_COUNT);
     }
     /**
@@ -177,7 +178,10 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
     public RadiusPacket authenticate(RadiusPacket accessRequest, int retries)
-    throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
+    throws RadiusException, InvalidParameterException {
+        if(null == accessRequest){
+            throw new InvalidParameterException("accessRequest parameter cannot be null");
+        }
         if(retries < 0){
             throw new InvalidParameterException("retries must be zero or greater!");
         }else if (retries == 0){
@@ -192,58 +196,38 @@ public class RadiusClient
         //16 bytes: Request Authenticator
         byte [] requestAuthenticator = this.makeRFC2865RequestAuthenticator();
 
-        // ***************************************************************
-        //                          Attributes.
-        // ***************************************************************
-        if (requestAttributes == null){
-            requestAttributes = new ByteArrayOutputStream();
-        }
-        // USER_NAME
-        //this.setAttribute(RadiusAttributeValues.USER_NAME, this.userName.getBytes(), requestAttributes);
-        // USER_PASSWORD
-        if(userPass.length() > 0){//otherwise we don't add it to the Attributes
-            /*if (userPass.length() > 16){
-                userPass = userPass.substring(0, 16);
-            }*/
-            byte [] encryptedPass = this.encryptPass(userPass, requestAuthenticator);
-            //(encryptPass gives ArrayIndexOutOfBioundsException if password is of zero length)
-            this.setAttribute(RadiusAttributeValues.USER_PASSWORD, encryptedPass.length, encryptedPass, requestAttributes);
-        }
-        //set a STATE attribute IF it is there (for Challenge responses)
+        // USER_NAME should be set as an attribute already
+        //USER_PASSWORD may or may not be set
         try{
-            this.setAttribute(RadiusAttributeValues.STATE, this.getStateAttributeFromResponse(), requestAttributes);
+            byte [] userPass = accessRequest.getAttribute(RadiusAttributeValues.USER_PASSWORD).getValue();
+            if(userPass.length > 0){//otherwise we don't add it to the Attributes
+                byte [] encryptedPass = this.encryptPapPassword(userPass, requestAuthenticator);
+                //(encryptPass gives ArrayIndexOutOfBoundsException if password is of zero length)
+                accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.USER_PASSWORD, encryptedPass));
+            }
         }catch(RadiusException rex){
-            //no state attribute was set, so we go merrily on our way
+            //only thrown if there isn't a matching attribute justifiable to ignore
+            //user needs to make sure he builds RadiusPackets correctly
         }
         // Set the NAS-Identifier
-        this.setAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID, requestAttributes);
+        accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID));
         // Length of Packet is computed as follows, 20 bytes (corresponding to
         // length of code + Identifier + Length + Request Authenticator) +
         // each attribute has a length computed as follows: 1 byte for the type +
         // 1 byte for the length of the attribute + length of attribute bytes
-        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.size() );
+        byte[] requestAttributes = accessRequest.getAttributeBytes();
+        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.length );
 
         DatagramPacket packet =
-            this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, accessRequest.getAttributeBytes());
-        // now send the request and recieve the response
-        int responseCode = 0;
+            this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, requestAttributes);
+        // now send the request and receive the response
+        RadiusPacket responsePacket = null;
         if ((packet = this.sendReceivePacket(packet, retries)) != null){
-            switch(this.checkRadiusPacket(packet,identifier, requestAuthenticator)){
-            case RadiusPacket.ACCESS_ACCEPT:
-                responseCode = RadiusPacket.ACCESS_ACCEPT;
-                break;
-            case RadiusPacket.ACCESS_REJECT:
-                responseCode = RadiusPacket.ACCESS_REJECT;
-                break;
-            case RadiusPacket.ACCESS_CHALLENGE:
-                responseCode = RadiusPacket.ACCESS_CHALLENGE;
-                break;
-            default:
-                throw new RadiusException("Invalid response recieved from the RADIUS Server.");
-            }
+            responsePacket = this.checkRadiusPacket(packet,identifier, requestAuthenticator);
+        }else{
+            throw new RadiusException("null returned from sendReceivePacket");
         }
-        //destroy userPass in memory?
-        return responseCode;
+        return responsePacket;//won't ever return null
     }
     /**
      *
@@ -433,13 +417,13 @@ public class RadiusClient
             throws IOException,UnknownHostException, RadiusException{
                 
         byte code = RadiusPacket.ACCOUNTING_REQUEST;
-        byte identifier = RadiusClient.getNextIdentifier();
+        //byte identifier = RadiusClient.getNextIdentifier();
         if (service.length != 4){
             throw new RadiusException("The service byte array must have a length of 4");
         }
 
         if ((sessionId == null) || (sessionId == "")){
-            sessionId = "session" + this.userName;
+            //sessionId = "session" + this.userName;
         }
         
         ByteArrayOutputStream requestAttributes = null;
@@ -449,11 +433,11 @@ public class RadiusClient
             requestAttributes = new ByteArrayOutputStream();
         }
         
-        this.setAttribute(RadiusAttributeValues.USER_NAME, this.userName.getBytes(), requestAttributes);
-        this.setAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID, requestAttributes);
-        this.setAttribute(RadiusAttributeValues.ACCT_STATUS_TYPE, service, requestAttributes); // Acct-Status-Type
-        this.setAttribute(RadiusAttributeValues.ACCT_SESSION_ID, sessionId.getBytes(), requestAttributes);
-        this.setAttribute(RadiusAttributeValues.SERVICE_TYPE, service, requestAttributes);
+//        this.setAttribute(RadiusAttributeValues.USER_NAME, this.userName.getBytes(), requestAttributes);
+//        this.setAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID, requestAttributes);
+//        this.setAttribute(RadiusAttributeValues.ACCT_STATUS_TYPE, service, requestAttributes); // Acct-Status-Type
+//        this.setAttribute(RadiusAttributeValues.ACCT_SESSION_ID, sessionId.getBytes(), requestAttributes);
+//        this.setAttribute(RadiusAttributeValues.SERVICE_TYPE, service, requestAttributes);
         
         // Length of Packet is computed as follows, 20 bytes (corresponding to
         // length of code + Identifier + Length + Request Authenticator) +
@@ -481,20 +465,22 @@ public class RadiusClient
      * @param requestAuthenticator byte[] the requestAuthenicator to use in the encryption
      * @return byte[] the byte array containing the encrypted password
      */
-    private byte [] encryptPass(String userPass, byte [] requestAuthenticator) {
-        // encrypt the password
+    private byte [] encryptPapPassword(final byte[] userPass, final byte [] requestAuthenticator) {
+        // encrypt the password.
+        byte[] userPassBytes = null;
         //the password must be a multiple of 16 bytes and less than or equal
         //to 128 bytes. If it isn't a multiple of 16 bytes fill it out with zeroes
         //to make it a multiple of 16 bytes. If it is greater than 128 bytes
         //truncate it at 128
 
-        if (userPass.length() > 128){
-            userPass = userPass.substring(0, 128);
+        if (userPass.length > 128){
+            userPassBytes = new byte[128];
+            System.arraycopy(userPass,0,userPassBytes,0,128);
+        }else {
+            userPassBytes = userPass;
         }
-        // Transformation de la chaine en tableau d'octet pour hachage MD5.
-        byte userPassBytes[] = userPass.getBytes();
         // declare the byte array to hold the final product
-        byte encryptedPass[] = null;
+        byte[] encryptedPass = null;
 
         if (userPassBytes.length < 128) {
             if (userPassBytes.length % 16 == 0) {
@@ -633,7 +619,7 @@ public class RadiusClient
      *                          dotted-quad IP address
      */
     public String getHostname() {
-        return this.hostname;
+        return this.hostname.getHostName();
     }
     /**
      * This method sets the Host Name to be used for RADIUS
@@ -649,8 +635,12 @@ public class RadiusClient
             throw new InvalidParameterException("Hostname can not be null!");
         }else if (hostname.trim().equals("")){
             throw new InvalidParameterException("Hostname can not be empty or all blanks!");
-        }else{//everything is a-ok
-            this.hostname = hostname;
+        }else{
+            try{
+                this.hostname = InetAddress.getByName(hostname);
+            }catch(java.net.UnknownHostException uhex){
+                throw new InvalidParameterException("Hostname failed InetAddress.getByName() validation!");
+            }
         }
     }
     /**
@@ -666,7 +656,7 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the port is less
      *                          than 0 or greater than 65535
      */
-    public void setAuthPort(int port) throws InvalidParameterException
+    private void setAuthPort(int port) throws InvalidParameterException
     {
         if ((port > 0) && (port < 65536)){
             this.authenticationPort = port;
@@ -687,32 +677,12 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the port is less
      *                          than 0 or greater than 65535
      */
-    public void setAcctPort(int port) throws InvalidParameterException
+    private void setAcctPort(int port) throws InvalidParameterException
     {
         if ((port > 0) && (port < 65536)){
             this.accountingPort = port;
         }else{
             throw new InvalidParameterException("Port value out of range!");
-        }
-    }
-    /**
-     * This method returns the current user name to be used for authentication
-     * @return java.lang.String
-     */
-    public String getUserName() {
-        return this.userName;
-    }
-    /**
-     * This method sets the user name to be used for authentication
-     * @param user_name java.lang.String
-     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the username is null,
-     *                          empty or all blanks
-     */
-    public void setUserName(String username) throws InvalidParameterException {
-        if (username == null){
-            throw new InvalidParameterException("User Name can not be null!");
-        }else{//everything is a-ok
-            this.userName = username;
         }
     }
     /**
@@ -774,230 +744,6 @@ public class RadiusClient
         }
     }
     /**
-     * This method extracts the reply message returned by a RADIUS Server and
-     * supplies it to the user, who should them use it to build a new password
-     * and re-authenticate.
-     *@return java.lang.String the challenge message to display to the user
-     *@exception net.sourceforge.jradiusclient.exception.RadiusException
-     */
-    public String getReplyMessage() throws RadiusException{
-        if(this.responseAttributes == null){
-            throw new RadiusException("No Response Attributes have been set.");
-        }
-        byte[] messageBytes = (byte[])this.responseAttributes.get(new Integer(RadiusAttributeValues.REPLY_MESSAGE));
-        if ((messageBytes == null) || (messageBytes.length == 0)){
-            throw new RadiusException("No Reply Message has been set.");
-        }
-        return new String(messageBytes);
-    }
-    /**
-     * This method extracts the Challenge message returned by a RADIUS Server and
-     * supplies it to the user, who should them use it to build a new password
-     * and re-authenticate.
-     *@return java.lang.String the challenge message to display to the user
-     *@exception net.sourceforge.jradiusclient.exception.RadiusException
-     */
-    public String getChallengeMessage() throws RadiusException{
-        return this.getReplyMessage();
-    }
-    /**
-     * This method extracts the SessionTimeout returned by a RADIUS Server
-     *@return java.lang.Integer the session timeout for the user
-     *@exception net.sourceforge.jradiusclient.exception.RadiusException
-     */
-    public Integer getSessionTimeout() throws RadiusException{
-        if(this.responseAttributes == null){
-            throw new RadiusException("No Response Attributes have been set.");
-        }
-        byte[] sessiontimeoutBytes = (byte[])this.responseAttributes.get(new Integer(RadiusAttributeValues.SESSION_TIMEOUT));
-        if ((sessiontimeoutBytes == null) || (sessiontimeoutBytes.length == 0)){
-            throw new RadiusException("No Session Timeout has been set.");
-        }
-        return this.attributeBytesToInteger(sessiontimeoutBytes);
-    }
-    /**
-     * This method extracts the Framed IP Address returned by a RADIUS Server
-     *@return java.lang.String the Framed Ip Address
-     *@exception net.sourceforge.jradiusclient.exception.RadiusException
-     */
-    public String getFramedIPAddress() throws RadiusException{
-        if(this.responseAttributes == null){
-            throw new RadiusException("No Response Attributes have been set.");
-        }
-        byte[] ipaddrBytes = (byte[])this.responseAttributes.get(new Integer(RadiusAttributeValues.FRAMED_IP_ADDRESS));
-        if ((ipaddrBytes == null) || (ipaddrBytes.length == 0)){
-            throw new RadiusException("No Framed Ip Address has been set.");
-        }
-        return this.attributeBytesToIPAddr(ipaddrBytes);
-    }
-    /**
-     *
-     */
-    private Integer attributeBytesToInteger(byte[] input){
-        int value = 0, tmp =0;
-        for(int i = 0; i<input.length;i++){
-            tmp = input[i] & 0x7F;
-            if((input[i]&80000000) != 0){
-                tmp |=0x80;
-            }
-            value = (256 * value) + tmp;
-        }
-        return new Integer(value);
-    }
-    /**
-     *
-     */
-    private String attributeBytesToIPAddr(byte[] input)throws RadiusException{
-        if (input.length > 4){
-            throw new RadiusException("Invalid IP Address - too many bytes");
-        }
-        StringBuffer ipaddr = new StringBuffer();
-        for(int i =0; i<4;i++){
-            if((input[i]&80000000)!=0){
-                ipaddr.append((input[i] & 0x7F) | 0x80);
-            }else{
-                ipaddr.append((input[i] & 0x7F));
-            }
-            if (i != 3){
-                ipaddr.append(".");
-            }
-        }
-        return ipaddr.toString();
-    }
-    /**
-     * This method returns the bytes sent in the STATE attribute of the RADIUS
-     * Server's response to a request
-     *@return java.lang.String the challenge message to display to the user
-     *@exception net.sourceforge.jradiusclient.exception.RadiusException
-     */
-    private byte[] getStateAttributeFromResponse() throws RadiusException{
-        if(this.responseAttributes == null){
-            throw new RadiusException("No Response Attributes have been set.");
-        }
-        byte[] stateBytes = (byte[])this.responseAttributes.get(new Integer(RadiusAttributeValues.STATE));
-        if ((stateBytes == null) || (stateBytes.length == 0)){
-            throw new RadiusException("No State Attribute has been set.");
-        }
-        return stateBytes;
-    }
-    /**
-     * This method is used to set a byte array attribute in the Request Attributes
-     * portion of the packet. Use one of the other two methods to set simple attributes.
-     * This method should only be called directly to set a password attribute,
-     * where the length expected by the radius server is the actual length of the
-     * password not the length of the MD5 encrypted byte array (16 bytes) that go
-     * into the packet.
-     * @param type int attribute type
-     * @param length int length of attribute, this is normally the length of the byte array
-     *                   but in the case of the password attribute it is the actual length
-     *                   of the password not the length of the MD5 hashed 16 byte value actually
-     *                   passed to the radius server
-     * @param attribute byte[] the actual attribute byte array
-     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
-     */
-    private void setAttribute(int type, int length, byte [] attribute, ByteArrayOutputStream requestAttributes) {
-        //1 byte: Type
-        requestAttributes.write(type);
-
-        //1 byte: length of the Type plus 2 bytes for the rest of this attirbute.
-        requestAttributes.write(length + 2);
-
-        //Value.length() bytes: the actual Value.
-        requestAttributes.write(attribute, 0, length);
-    }
-    /**
-     * This method is used to set a byte array attribute in a Request Attributes
-     * ByteArrayOutputStream that can be passed in to the authenticate method.
-     * Things that CANNOT/SHOULD NOT be set here are the
-     * <UL><LI>RadiusClient.USER_NAME</LI>
-     *     <LI>RadiusClient.USER_PASSWORD </LI>
-     *     <LI>RadiusClient.NAS_IDENTIFIER </LI>
-     *     <LI>RadiusClient.STATE </LI>
-     * </UL>
-     * If you attempt to set one you will get an InvalidParameterException
-     * @param type int attribute type
-     * @param attribute byte[] the actual attribute byte array
-     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
-     * @throws InvalidParameterException
-     */
-    public void setUserAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes)
-    throws InvalidParameterException {
-        //check to make sure type is not one we will set in authenticate method
-        if (type == RadiusAttributeValues.USER_NAME) {
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_NAME");
-        }else if (type == RadiusAttributeValues.USER_PASSWORD) {
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_PASSWORD");
-        }else if (type == RadiusAttributeValues.NAS_IDENTIFIER) {
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.NAS_IDENTIFIER");
-        }else if (type == RadiusAttributeValues.STATE){
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.STATE");
-        }
-        this.setAttribute(type, attribute.length, attribute, requestAttributes);
-    }
-    /**
-     * This method is used to set a byte array attribute in a Request Attributes
-     * ByteArrayOutputStream that can be passed in to the authenticate method.
-     * Things that CANNOT/SHOULD NOT be set here are the
-     * <UL><LI>RadiusClient.USER_NAME</LI>
-     *     <LI>RadiusClient.USER_PASSWORD </LI>
-     *     <LI>RadiusClient.NAS_IDENTIFIER </LI>
-     *     <LI>RadiusClient.STATE </LI>
-     * </UL>
-     * If you attempt to set one you will get an InvalidParameterException
-     * @param type int attribute type
-     * @param subType int sub attribute type
-     * @param attribute byte[] the actual attribute byte array
-     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
-     * @throws InvalidParameterException
-     * author kay michael koehler koehler@remwave.com, koehler@buddy4mac.com, koehler@econo.de
-     */
-    public void setUserSubAttribute(int type, int subType, byte [] attribute, ByteArrayOutputStream requestAttributes)
-    throws InvalidParameterException {
-        if (type == RadiusAttributeValues.USER_NAME) {
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_NAME");
-        }else if (type == RadiusAttributeValues.USER_PASSWORD) {
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_PASSWORD");
-        }else if (type == RadiusAttributeValues.NAS_IDENTIFIER) {
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.NAS_IDENTIFIER");
-        }else if (type == RadiusAttributeValues.STATE){
-            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.STATE");
-        }
-        //1 byte: Type
-        requestAttributes.write(type);
-
-        //1 byte: length of the Type plus 4 bytes for the rest of this attribute (total of >=5 bytes)
-        requestAttributes.write(attribute.length + 4);
-
-        requestAttributes.write(subType);
-
-        //1 byte: length of the attribute plus 2 bytes for minimal length (total of >=3 bytes)
-        requestAttributes.write(attribute.length + 2);
-
-        //Value.length() bytes: the actual Value.
-        requestAttributes.write(attribute, 0, attribute.length);
-    }
-    /**
-     * This method is used to set a byte array attribute in the Request Attributes
-     * portion of the packet.
-     * @param type int attribute type
-     * @param attribute byte[] the actual attribute byte array
-     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
-     */
-    private void setAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes) {
-        this.setAttribute(type, attribute.length, attribute, requestAttributes);
-    }
-    /**
-     * This method is used to set a single byte attribute in the Request Attributes
-     * portion of the packet.
-     * @param type int attribute type
-     * @param attribute byte the actual attribute byte
-     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
-     */
-    private void setAttribute(int type, byte attribute, ByteArrayOutputStream requestAttributes) {
-        byte [] attributeArray = {attribute};
-        this.setAttribute(type, attributeArray.length, attributeArray, requestAttributes);
-    }
-    /**
      * @param packet java.net.DatagramPacket
      * @param requestIdentifier byte
      * @param requestAuthenticator byte[]
@@ -1005,68 +751,81 @@ public class RadiusClient
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception java.io.IOException
      */
-    private int checkRadiusPacket(DatagramPacket packet,
+    private RadiusPacket checkRadiusPacket(DatagramPacket packet,
                                         byte requestIdentifier,
                                         byte[] requestAuthenticator)
-    throws IOException, RadiusException{
-        int returnCode = -1;
-        int packetLength = packet.getLength();
+    throws RadiusException{
         ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
         DataInputStream input = new DataInputStream(bais);
-        byte code = input.readByte();
-        returnCode = code & 0xff;
-        //now check the identifiers to see if they match
-        byte identifierByte = input.readByte();
-        //int identifier = identifierByte & 0xff;//don't need this
-        if (identifierByte != requestIdentifier){
-            //wrong packet asshole!
-            throw new RadiusException("The RADIUS Server returned the wrong Identifier.");
-        }
-        //read the length
-        short length = (short)((int)input.readShort() & 0xffff);
-        //now check the response authenticator to validate the packet
-        byte [] responseAuthenticator = new byte[16];
-        input.readFully(responseAuthenticator);
-        //get the attributes as a byte[]
-        byte[] responseAttributeBytes = new byte[length - RadiusPacket.RADIUS_HEADER_LENGTH];
-        input.readFully(responseAttributeBytes);
-        byte [] myResponseAuthenticator =
-            this.makeRFC2865ResponseAuthenticator(code, identifierByte, length,
-                                                requestAuthenticator, responseAttributeBytes);
-        //now compare them
-        if((responseAuthenticator.length != 16) ||
-            (myResponseAuthenticator.length != 16)){
-            //wrong authenticator length asshole!
-            throw new RadiusException("Authenticator length is incorrect.");
-        }else{
-            for (int i = 0; i<responseAuthenticator.length;i++){
-                if (responseAuthenticator[i] != myResponseAuthenticator[i]){
-                    //fuck! throw an exception
-                    throw new RadiusException("Authenticators do not match, response packet not validated!");
+        try{
+            int returnCode = -1;
+            int packetLength = packet.getLength();
+            byte code = input.readByte();
+            returnCode = code & 0xff;
+            //now check the identifiers to see if they match
+            byte identifierByte = input.readByte();
+            //int identifier = identifierByte & 0xff;//don't need this
+            if (identifierByte != requestIdentifier){
+                //wrong packet asshole!
+                throw new RadiusException("The RADIUS Server returned the wrong Identifier.");
+            }
+            //read the length
+            short length = (short)((int)input.readShort() & 0xffff);
+            //now check the response authenticator to validate the packet
+            byte [] responseAuthenticator = new byte[16];
+            input.readFully(responseAuthenticator);
+            //get the attributes as a byte[]
+            byte[] responseAttributeBytes = new byte[length - RadiusPacket.RADIUS_HEADER_LENGTH];
+            input.readFully(responseAttributeBytes);
+            byte [] myResponseAuthenticator =
+                this.makeRFC2865ResponseAuthenticator(code, identifierByte, length,
+                                                    requestAuthenticator, responseAttributeBytes);
+            //now compare them
+            if((responseAuthenticator.length != 16) ||
+                (myResponseAuthenticator.length != 16)){
+                //wrong authenticator length asshole!
+                throw new RadiusException("Authenticator length is incorrect.");
+            }else{
+                for (int i = 0; i<responseAuthenticator.length;i++){
+                    if (responseAuthenticator[i] != myResponseAuthenticator[i]){
+                        //fuck! throw an exception
+                        throw new RadiusException("Authenticators do not match, response packet not validated!");
+                    }
                 }
             }
-        }
-        //now parse out the responseAttributeBytes into the responseAttributes hashtable
-        int attributesLength = responseAttributeBytes.length;
-        if (attributesLength > 0){
-            Integer attributeType;
-            int attributeLength;
-            byte[] attributeValue;
-            DataInputStream attributeInput = new DataInputStream(new ByteArrayInputStream(responseAttributeBytes));
-            this.responseAttributes.clear();//thread issues???
-            for (int left=0; left < attributesLength; ){
-                attributeType = new Integer(attributeInput.readByte() & 0xff);
-                attributeLength = attributeInput.readByte() & 0xff;
-                attributeValue = new byte[attributeLength - 2];
-                attributeInput.read(attributeValue, 0, attributeLength - 2);
-                this.responseAttributes.put(attributeType, attributeValue);
-                left += attributeLength;
+            RadiusPacket responsePacket = new RadiusPacket(returnCode);
+            //RadiusPacket responsePacket = new RadiusResponsePacket(returnCode,identifierByte);
+        
+        
+            //now parse out the responseAttributeBytes into the responseAttributes hashtable
+            int attributesLength = responseAttributeBytes.length;
+            if (attributesLength > 0){
+                int attributeType;
+                int attributeLength;
+                byte[] attributeValue;
+                DataInputStream attributeInput = new DataInputStream(new ByteArrayInputStream(responseAttributeBytes));
+                
+                for (int left=0; left < attributesLength; ){
+                    attributeType = (attributeInput.readByte() & 0xff);
+                    attributeLength = attributeInput.readByte() & 0xff;
+                    attributeValue = new byte[attributeLength - 2];
+                    attributeInput.read(attributeValue, 0, attributeLength - 2);
+                    responsePacket.setAttribute(new RadiusAttribute(attributeType, attributeValue));
+                    left += attributeLength;
+                }
+                attributeInput.close();
             }
-            attributeInput.close();
+            return responsePacket;
+        }catch(IOException ioex){
+            throw new RadiusException(ioex.getMessage());
+        }catch(InvalidParameterException ipex){
+            throw new RadiusException("Invalid response attributes sent back from server.");
+        }finally{
+            try{
+                input.close();
+                bais.close();
+            }catch(IOException ignore){}
         }
-        input.close();
-        bais.close();
-        return returnCode;
     }
     /**
      * This method builds a Radius packet for transmission to the Radius Server
@@ -1083,31 +842,35 @@ public class RadiusClient
                                                 short length,
                                                 byte[] requestAuthenticator,
                                                 byte[] requestAttributes)
-    throws UnknownHostException, IOException{
+    throws RadiusException{
         ByteArrayOutputStream baos 	= new ByteArrayOutputStream();
         DataOutputStream output 	= new DataOutputStream(baos);
         DatagramPacket packet_out 	= null;
 
-        //1 byte: Code
-        output.writeByte(code);
-        //1 byte: identifier
-        output.writeByte(identifier);
-        //2 byte: Length
-        output.writeShort(length);
-        //16 bytes: Request Authenticator
-        //only write 16 of them if there are more, which there better not be
-        output.write(requestAuthenticator, 0, 16);
-
-        output.write(requestAttributes, 0, requestAttributes.length);
-
-        packet_out = new DatagramPacket(new byte[length], length);
-        packet_out.setPort(port);
-        packet_out.setAddress(InetAddress.getByName(this.hostname));
-        packet_out.setLength(length);
-
-        packet_out.setData(baos.toByteArray());
-        output.close();
-        baos.close();
+        try{
+            //1 byte: Code
+            output.writeByte(code);
+            //1 byte: identifier
+            output.writeByte(identifier);
+            //2 byte: Length
+            output.writeShort(length);
+            //16 bytes: Request Authenticator
+            //only write 16 of them if there are more, which there better not be
+            output.write(requestAuthenticator, 0, 16);
+    
+            output.write(requestAttributes, 0, requestAttributes.length);
+    
+            packet_out = new DatagramPacket(new byte[length], length);
+            packet_out.setPort(port);
+            packet_out.setAddress(this.hostname);
+            packet_out.setLength(length);
+    
+            packet_out.setData(baos.toByteArray());
+            output.close();
+            baos.close();
+        }catch(IOException ioex){
+            throw new RadiusException(ioex.getMessage());
+        }
         //won't get here in the case of an exception so we won't return return null or a malformed packet
         return packet_out;
     }
@@ -1119,7 +882,7 @@ public class RadiusClient
      * @exception java.io.IOException if there is a problem sending or recieving the packet, i.e recieve timeout
      */
     private DatagramPacket sendReceivePacket(DatagramPacket packet_out, int retry)
-    throws IOException, RadiusException{
+    throws RadiusException{
         if (packet_out.getLength() > RadiusPacket.MAX_PACKET_LENGTH){
             throw new RadiusException("Packet too big!");
         }else if (packet_out.getLength() < RadiusPacket.MIN_PACKET_LENGTH){
@@ -1136,7 +899,7 @@ public class RadiusClient
                 }catch (IOException ioex){
                     //if we reach the max number of retries throw it back up the stack
                     if (i == retry){
-                        throw ioex;
+                        throw new RadiusException(ioex.getMessage());
                     }
                 }
             }
@@ -1158,8 +921,6 @@ public class RadiusClient
         sb.append(Integer.toString(this.getAuthPort()));
         sb.append(" Shared Secret = ");
         sb.append(this.getSharedSecret());
-        sb.append(" User Name = ");
-        sb.append(this.getUserName());
         return sb.toString();
     }
     /**
@@ -1186,8 +947,7 @@ public class RadiusClient
         RadiusClient that = (RadiusClient)object;
         if ((this.getHostname().equals(that.getHostname())) &&
              (this.getAuthPort() == that.getAuthPort()) &&
-             (this.getSharedSecret().equals(that.getSharedSecret())) &&
-             this.getUserName().equals(that.getUserName())){
+             (this.getSharedSecret().equals(that.getSharedSecret()))){
             return true;
         }
         return true;
@@ -1199,7 +959,6 @@ public class RadiusClient
         StringBuffer sb = new StringBuffer(this.getHostname());
         sb.append(Integer.toString(this.getAuthPort()));
         sb.append(this.getSharedSecret());
-        sb.append(this.getUserName());
         return sb.toString().hashCode();
     }
     /**
