@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 /**
- * <p>Released under the LGPL</p>
+ * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;

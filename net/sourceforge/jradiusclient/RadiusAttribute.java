@@ -4,9 +4,9 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 /**
- * <p>Released under the LGPL</p>
+ * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class RadiusAttribute implements RadiusAttributeValues{
     private static final int HEADER_LENGTH = 2;

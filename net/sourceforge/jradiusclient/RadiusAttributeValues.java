@@ -1,6 +1,7 @@
 package net.sourceforge.jradiusclient;
 
 /**
+ * Released under the LGPL<BR>
  *
  * Special Thanks to the original creator of the "RadiusClient"
  * <a href="http://augiesoft.com/java/radius/">August Mueller </a>
@@ -9,7 +10,7 @@ package net.sourceforge.jradiusclient;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public interface RadiusAttributeValues
 {
