@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -84,14 +84,7 @@ public class RadiusClient implements RadiusValues
      */
     public RadiusClient(String hostname, String sharedSecret, String userName)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this.setHostname(hostname);
-        this.setUserName(userName);
-        this.setSharedSecret(sharedSecret);
-        //set up the socket for this client
-        this.socket = new DatagramSocket();
-        this.socket.setSoTimeout(socketTimeout);
-        //set up the md5 engine
-        this.md5MessageDigest = MessageDigest.getInstance("MD5");
+        this(hostname, 1812, 1813, sharedSecret, userName, 6000);
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
@@ -111,7 +104,36 @@ public class RadiusClient implements RadiusValues
      */
     public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, sharedSecret, userName);
+        this(hostname, authPort, acctPort, sharedSecret, userName, 6000);
+    }
+    /**
+     * Constructor allows the user to specify an alternate port for the radius server
+     * @param hostname java.lang.String
+     * @param authPort int the port to use for authentication requests
+     * @param acctPort int the port to use for accounting requests
+     * @param sharedSecret java.lang.String
+     * @param userName java.lang.String
+     * @param timeout int the timeout to use when waiting for return packets can't be neg and shouldn't be zero
+     * @exception java.net.SocketException If we could not create the necessary socket
+     * @exception java.security.NoSuchAlgorithmException If we could not get an
+     *                              instance of the MD5 algorithm.
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If an invalid hostname
+     *                              (null or empty string), an invalid
+     *                              port ( port < 0 or port > 65536)
+     *                              or an invalid shared secret (null, shared
+     *                              secret can be empty string) is passed in.
+     */
+    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName, int sockTimeout)
+    throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
+        this.setHostname(hostname);
+        this.setUserName(userName);
+        this.setSharedSecret(sharedSecret);
+        this.setTimeout(sockTimeout);
+        //set up the socket for this client
+        this.socket = new DatagramSocket();
+        this.socket.setSoTimeout(this.socketTimeout);
+        //set up the md5 engine
+        this.md5MessageDigest = MessageDigest.getInstance("MD5");
         this.setAuthPort(authPort);
         this.setAcctPort(acctPort);
     }
@@ -647,7 +669,7 @@ public class RadiusClient implements RadiusValues
      *                          (i.e. RADIUS server may be silently dropping your
      *                          packets and never sending a response)
      */
-    public void setTimeout(int socket_timeout) throws InvalidParameterException {
+    private void setTimeout(int socket_timeout) throws InvalidParameterException {
         if (socket_timeout < 0){
             throw new InvalidParameterException("A negative timeout value is not allowed!");
         }else{//everything is a-ok
