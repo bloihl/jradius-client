@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -40,11 +40,9 @@ public class RadiusClient implements RadiusValues
     private static final int ACCT_LOOP_COUNT = 3;
     private static Object nextIdentifierLock = new Object();
     private static byte nextIdentifier = (byte)0;
-
     private String userName = "";
     private String sharedSecret = "";
     private String hostname = "";
-    private boolean useCHAP = false;
     //This is a weak implementation for Response Attributes as it will only
     //store the last element put into it in the parsing process, whereas some of
     //the elements in the Response packet from the Radius Server may occur
@@ -84,7 +82,7 @@ public class RadiusClient implements RadiusValues
      *                              shared secret (null, shared secret can be
      *                              empty string) is passed in.
      */
-    public RadiusClient(String hostname, String sharedSecret, String userName, boolean useCHAP)
+    public RadiusClient(String hostname, String sharedSecret, String userName)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
         this.setHostname(hostname);
         this.setUserName(userName);
@@ -94,7 +92,6 @@ public class RadiusClient implements RadiusValues
         this.socket.setSoTimeout(socketTimeout);
         //set up the md5 engine
         this.md5MessageDigest = MessageDigest.getInstance("MD5");
-        this.useCHAP = useCHAP;
     }
     /**
      * Constructor allows the user to specify an alternate port for the radius server
@@ -112,9 +109,9 @@ public class RadiusClient implements RadiusValues
      *                              or an invalid shared secret (null, shared
      *                              secret can be empty string) is passed in.
      */
-    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName, boolean useCHAP)
+    public RadiusClient(String hostname, int authPort, int acctPort, String sharedSecret, String userName)
     throws SocketException, NoSuchAlgorithmException, InvalidParameterException{
-        this(hostname, sharedSecret, userName, useCHAP);
+        this(hostname, sharedSecret, userName);
         this.setAuthPort(authPort);
         this.setAcctPort(acctPort);
     }
@@ -170,12 +167,8 @@ public class RadiusClient implements RadiusValues
             if (userPass.length() > 16){
                 userPass = userPass.substring(0, 16);
             }
-            if(this.useCHAP){
-                //(encryptPass gives ArrayIndexOutOfBioundsException if password is of zero length)
-                this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), this.encryptPass(userPass, requestAuthenticator), requestAttributes);
-            }else{
-                this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), userPass.getBytes(), requestAttributes);
-            }
+            //(encryptPass gives ArrayIndexOutOfBioundsException if password is of zero length)
+            this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), this.encryptPass(userPass, requestAuthenticator), requestAttributes);
         }
         //set a STATE attribute IF it is there (for Challenge responses)
         try{
