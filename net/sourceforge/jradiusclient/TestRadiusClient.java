@@ -2,6 +2,8 @@ package net.sourceforge.jradiusclient;
 
 import gnu.getopt.Getopt;
 import gnu.getopt.LongOpt;
+
+import java.io.BufferedInputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -10,7 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -21,7 +23,7 @@ public class TestRadiusClient{
     {
         int authport = 1812 ;
         int acctport = 1813;
-        String host,sharedSecret;
+        String host = "localhost",sharedSecret = null;
         StringBuffer portSb = new StringBuffer();
         LongOpt[] longOpts = {new LongOpt("authPort",LongOpt.REQUIRED_ARGUMENT,portSb,1),
             new LongOpt("acctPort",LongOpt.REQUIRED_ARGUMENT,portSb,2)};
@@ -64,56 +66,54 @@ public class TestRadiusClient{
         }
         String userName, userPass, authMethod;
         boolean attributes = false;
-        while(true){
-            attributes = false;
-            //prompt user for input
-            System.out.print("Username: ");
-            System.out.print("Password:");
-            System.out.print("Authentication method [PAP | chap]:");
-            System.out.print("Additional Attributes? [y|N]:");
-            System.out.print("Attribute Type:");
-            System.out.print("AttributeValue:");
-            try{
-                boolean returned = TestRadiusClient.chapAuthenticate(rc, userPass, callingStationId);
-                if (returned){
-                    TestRadiusClient.log("------------------------------------------------------");
-                    /*returned = rc.startAccounting(args[5]);
-                    if (returned){
-                        TestRadiusClient.log("Accounting start succeeded.");
-                    }else{
-                        TestRadiusClient.log("Accounting start failed.");
-                    }
-                    TestRadiusClient.log("------------------------------------------------------");
-                    returned = rc.stopAccounting(args[5]);
-                    if (returned){
-                        TestRadiusClient.log("Accounting stop succeeded.");
-                    }else{
-                        TestRadiusClient.log("Accounting stop failed.");
-                    }
-                    */
-                    TestRadiusClient.log("------------------------------------------------------");
-                }
-            }catch(InvalidParameterException ivpex){
-                TestRadiusClient.log(ivpex.getMessage());
-            }catch(RadiusException rex){
-                TestRadiusClient.log(rex.getMessage());
+        BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
+        try{
+            while(true){
+                attributes = false;
+                //prompt user for input
+                System.out.print("Username: ");
+                userName = inputReader.readLine();
+                System.out.print("Password:");
+                userPass = inputReader.readLine();
+                System.out.print("Authentication method [PAP | chap]:");
+                authMethod = inputReader.readLine();
+    //            System.out.print("Additional Attributes? [y|N]:");
+    //            System.out.print("Attribute Type:");
+    //            System.out.print("AttributeValue:");
+    //            try{
+    //                boolean returned = TestRadiusClient.chapAuthenticate(rc, userPass);
+    //                if (returned){
+    //                    TestRadiusClient.log("------------------------------------------------------");
+    //                    /*returned = rc.startAccounting(args[5]);
+    //                    if (returned){
+    //                        TestRadiusClient.log("Accounting start succeeded.");
+    //                    }else{
+    //                        TestRadiusClient.log("Accounting start failed.");
+    //                    }
+    //                    TestRadiusClient.log("------------------------------------------------------");
+    //                    returned = rc.stopAccounting(args[5]);
+    //                    if (returned){
+    //                        TestRadiusClient.log("Accounting stop succeeded.");
+    //                    }else{
+    //                        TestRadiusClient.log("Accounting stop failed.");
+    //                    }
+    //                    */
+    //                    TestRadiusClient.log("------------------------------------------------------");
+    //                }
+    //            }catch(InvalidParameterException ivpex){
+    //                TestRadiusClient.log(ivpex.getMessage());
+    //            }catch(RadiusException rex){
+    //                TestRadiusClient.log(rex.getMessage());
+    //            }
             }
+        }catch(IOException ioex){
+            
         }
     }
-    public static boolean authenticate(RadiusClient rc, String userPass,  byte[] callingStationId) throws InvalidParameterException,
+    public static boolean authenticate(RadiusClient rc, String userPass) throws InvalidParameterException,
     java.net.UnknownHostException, java.io.IOException, RadiusException, NoSuchAlgorithmException{
         int returnCode;
-        if(callingStationId != null){
-            ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
-            try{
-                rc.setUserAttribute(RadiusAttributeValues.CALLING_STATION_ID, callingStationId, reqAttributes);
-            }catch(InvalidParameterException ivpex){
-                TestRadiusClient.log(ivpex.getMessage());
-            }
-            returnCode = rc.authenticate(userPass, reqAttributes);
-        }else{
-            returnCode = rc.authenticate(userPass);
-        }
+        returnCode = rc.authenticate(userPass);
         boolean returned = false;
         TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         switch (returnCode){
@@ -140,7 +140,7 @@ public class TestRadiusClient{
         TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         return returned;
     }
-    public static boolean chapAuthenticate(RadiusClient rc, String userPass,  byte[] callingStationId) throws InvalidParameterException,
+    public static boolean chapAuthenticate(RadiusClient rc, String userPass) throws InvalidParameterException,
     java.net.UnknownHostException, java.io.IOException, RadiusException, NoSuchAlgorithmException{
         int returnCode;
         //pretend we are a client who is encrypting his password with a random
@@ -165,15 +165,8 @@ public class TestRadiusClient{
         userPass = "";
         ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
         //add CHAP attributes
-        rc.setUserAttribute(RadiusClient.CHAP_PASSWORD, chapPassword, reqAttributes);
-        rc.setUserAttribute(RadiusClient.CHAP_CHALLENGE, chapChallenge.getBytes(), reqAttributes);
-        if(callingStationId != null){
-            try{
-                rc.setUserAttribute(RadiusClient.CALLING_STATION_ID, callingStationId, reqAttributes);
-            }catch(InvalidParameterException ivpex){
-                TestRadiusClient.log(ivpex.getMessage());
-            }
-        }
+        rc.setUserAttribute(RadiusAttributeValues.CHAP_PASSWORD, chapPassword, reqAttributes);
+        rc.setUserAttribute(RadiusAttributeValues.CHAP_CHALLENGE, chapChallenge.getBytes(), reqAttributes);
         returnCode = rc.authenticate(userPass, reqAttributes);
 
         boolean returned = false;
@@ -208,49 +201,49 @@ public class TestRadiusClient{
         System.out.println(message);
     }
 
-    private void setSIPAttributes(RadiusClient rc, ByteArrayOutputStream reqAttributes) throws InvalidParameterException {
-        rc.setUserAttribute(RadiusClient.DIGEST_RESPONSE, "0c02a1cc5ec9a986aaa7232bb975faffa".getBytes(), reqAttributes);
-
-             rc.setUserSubAttribute(
-                 RadiusClient.DIGEST_ATTRIBUTE,
-                 RadiusClient.SIP_REALM,
-                 "buddyphone".getBytes(),
-                 reqAttributes
-             );
-
-             rc.setUserSubAttribute(
-                 RadiusClient.DIGEST_ATTRIBUTE,
-                 RadiusClient.SIP_USER_NAME,
-                 "koehler".getBytes(),
-                 reqAttributes
-             );
-
-             rc.setUserSubAttribute(
-                 RadiusClient.DIGEST_ATTRIBUTE,
-                 RadiusClient.SIP_NONCE,
-                 "1a80ff0a".getBytes(),
-                 reqAttributes
-             );
-
-             rc.setUserSubAttribute(
-                 RadiusClient.DIGEST_ATTRIBUTE,
-                 RadiusClient.SIP_URI,
-                 "sip:buddyphone.com:5060".getBytes(),
-                 reqAttributes
-             );
-
-             rc.setUserSubAttribute(
-                 RadiusClient.DIGEST_ATTRIBUTE,
-                 RadiusClient.SIP_METHOD,
-                 "REGISTER".getBytes(),
-                 reqAttributes
-             );
-
-             rc.setUserSubAttribute(
-                 RadiusClient.DIGEST_ATTRIBUTE,
-                 RadiusClient.SIP_ALGORITHM,
-                 "MD5".getBytes(),
-                 reqAttributes
-             );
-    }
+//    private void setSIPAttributes(RadiusClient rc, ByteArrayOutputStream reqAttributes) throws InvalidParameterException {
+//        rc.setUserAttribute(RadiusClient.DIGEST_RESPONSE, "0c02a1cc5ec9a986aaa7232bb975faffa".getBytes(), reqAttributes);
+//
+//             rc.setUserSubAttribute(
+//                 RadiusClient.DIGEST_ATTRIBUTE,
+//                 RadiusClient.SIP_REALM,
+//                 "buddyphone".getBytes(),
+//                 reqAttributes
+//             );
+//
+//             rc.setUserSubAttribute(
+//                 RadiusClient.DIGEST_ATTRIBUTE,
+//                 RadiusClient.SIP_USER_NAME,
+//                 "koehler".getBytes(),
+//                 reqAttributes
+//             );
+//
+//             rc.setUserSubAttribute(
+//                 RadiusClient.DIGEST_ATTRIBUTE,
+//                 RadiusClient.SIP_NONCE,
+//                 "1a80ff0a".getBytes(),
+//                 reqAttributes
+//             );
+//
+//             rc.setUserSubAttribute(
+//                 RadiusClient.DIGEST_ATTRIBUTE,
+//                 RadiusClient.SIP_URI,
+//                 "sip:buddyphone.com:5060".getBytes(),
+//                 reqAttributes
+//             );
+//
+//             rc.setUserSubAttribute(
+//                 RadiusClient.DIGEST_ATTRIBUTE,
+//                 RadiusClient.SIP_METHOD,
+//                 "REGISTER".getBytes(),
+//                 reqAttributes
+//             );
+//
+//             rc.setUserSubAttribute(
+//                 RadiusClient.DIGEST_ATTRIBUTE,
+//                 RadiusClient.SIP_ALGORITHM,
+//                 "MD5".getBytes(),
+//                 reqAttributes
+//             );
+//    }
 }
