@@ -1,0 +1,52 @@
+<project name="jradius-client" default="compile" basedir=".">
+  <!-- set global properties for this build -->
+  <property name="src" value="." />
+  <property name="build" value="classes" />
+  <property name="dist"  value="dist" />
+  <property name="doc"   value="docs" />
+
+  <target name="prepare">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}" />
+  </target>
+
+  <target name="compile" depends="prepare">
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}">
+        <classpath>
+          <pathelement path="${classpath}" />
+        </classpath>
+    </javac>
+  </target>
+
+  <target name="dist" depends="compile">
+    <mkdir dir="${dist}" />
+
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+    <jar jarfile="${dist}/jradius-client.jar" basedir="${build}" />
+  </target>
+
+  <target name="doc">
+    <mkdir dir="${doc}" />
+    <javadoc packagenames="net.sourceforge.*"
+             sourcepath="."
+             destdir="docs"
+             author="true"
+             use="true"
+             windowtitle="Approuter API">
+    </javadoc>
+  </target>
+
+  <target name="clean">
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}" />
+    <delete dir="${dist}" />
+  </target>
+
+  <target name="proper" depends="clean,dist" />
+
+</project>
+
+
