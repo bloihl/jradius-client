@@ -1,5 +1,7 @@
 package net.sourceforge.jradiusclient;
 
+import gnu.getopt.Getopt;
+import gnu.getopt.LongOpt;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -8,82 +10,94 @@ import java.security.NoSuchAlgorithmException;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.9 $
+ * @version $Revision: 1.10 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
-        return "usage: RadiusClient server authPort acctPort secret user password [calling-station-id]";
+        return "usage: TestRadiusClient -s RadiusServer -S sharedSecret [--authPort=1812] [--acctPort=1813]";
     }
 
     public static void main(String [] args)
     {
-        if ((args.length < 6) || (args.length > 7))
-        {
-            TestRadiusClient.log(getUsage());
-            System.exit(2);
-        }
-        int authport = 0 ;
-        int acctport = 0 ;
-        try{
-            authport = Integer.parseInt(args[1]);
-            acctport = Integer.parseInt(args[2]);
-        }catch (NumberFormatException nfex){
-            TestRadiusClient.log("port must be a positive integer!");
-            TestRadiusClient.log(getUsage());
-            System.exit(3);
+        int authport = 1812 ;
+        int acctport = 1813;
+        String host,sharedSecret;
+        StringBuffer portSb = new StringBuffer();
+        LongOpt[] longOpts = {new LongOpt("authPort",LongOpt.REQUIRED_ARGUMENT,portSb,1),
+            new LongOpt("acctPort",LongOpt.REQUIRED_ARGUMENT,portSb,2)};
+        Getopt gOpt = new Getopt("TestRadiusClient",args,"s:S:",longOpts,false);
+        gOpt.setOpterr(true);
+        int c;
+        while((c = gOpt.getopt()) != -1){
+            switch(c){
+                case 's':
+                    host = gOpt.getOptarg();
+                    break;
+                case 'S':
+                    sharedSecret = gOpt.getOptarg();
+                    break;
+                case 1:
+                    authport = (new Integer(portSb.toString())).intValue();
+                    break;
+                case 2:
+                    acctport = (new Integer(portSb.toString())).intValue();
+                    break;
+                case '?':
+                    break;//getopt already printed an error
+                default:
+                    System.err.println(getUsage());
+            }
         }
 
         RadiusClient rc = null;
         try{
-            rc = new RadiusClient(args[0], authport,acctport, args[3],args[4]);
-        }catch(java.net.SocketException soex){
-            TestRadiusClient.log("Unable to create Radius Client due to failure to create socket!");
+            rc = new RadiusClient(host, authport,acctport, sharedSecret);
+        }catch(RadiusException rex){
+            TestRadiusClient.log(rex.getMessage());
             TestRadiusClient.log(getUsage());
             System.exit(4);
-        }catch(java.security.NoSuchAlgorithmException nsaex){
-            TestRadiusClient.log("Unable to create Radius Client due to failure to create MD5 MessageDigest!");
-            TestRadiusClient.log(getUsage());
-            System.exit(5);
         }catch(InvalidParameterException ivpex){
             TestRadiusClient.log("Unable to create Radius Client due to invalid parameter!");
             TestRadiusClient.log(ivpex.getMessage());
             TestRadiusClient.log(getUsage());
-            System.exit(6);
+            System.exit(5);
         }
-        String userPass = args[5];
-        byte[] callingStationId = null;
-        if(args.length > 6 ){//the seventh one should be calling station ID
-            callingStationId = args[6].getBytes();
-        }
-        try{
-            boolean returned = TestRadiusClient.chapAuthenticate(rc, userPass, callingStationId);
-            if (returned){
-                TestRadiusClient.log("------------------------------------------------------");
-                returned = rc.startAccounting(args[5]);
+        String userName, userPass, authMethod;
+        boolean attributes = false;
+        while(true){
+            attributes = false;
+            //prompt user for input
+            System.out.print("Username: ");
+            System.out.print("Password:");
+            System.out.print("Authentication method [PAP | chap]:");
+            System.out.print("Additional Attributes? [y|N]:");
+            System.out.print("Attribute Type:");
+            System.out.print("AttributeValue:");
+            try{
+                boolean returned = TestRadiusClient.chapAuthenticate(rc, userPass, callingStationId);
                 if (returned){
-                    TestRadiusClient.log("Accounting start succeeded.");
-                }else{
-                    TestRadiusClient.log("Accounting start failed.");
+                    TestRadiusClient.log("------------------------------------------------------");
+                    /*returned = rc.startAccounting(args[5]);
+                    if (returned){
+                        TestRadiusClient.log("Accounting start succeeded.");
+                    }else{
+                        TestRadiusClient.log("Accounting start failed.");
+                    }
+                    TestRadiusClient.log("------------------------------------------------------");
+                    returned = rc.stopAccounting(args[5]);
+                    if (returned){
+                        TestRadiusClient.log("Accounting stop succeeded.");
+                    }else{
+                        TestRadiusClient.log("Accounting stop failed.");
+                    }
+                    */
+                    TestRadiusClient.log("------------------------------------------------------");
                 }
-                TestRadiusClient.log("------------------------------------------------------");
-                returned = rc.stopAccounting(args[5]);
-                if (returned){
-                    TestRadiusClient.log("Accounting stop succeeded.");
-                }else{
-                    TestRadiusClient.log("Accounting stop failed.");
-                }
-                TestRadiusClient.log("------------------------------------------------------");
+            }catch(InvalidParameterException ivpex){
+                TestRadiusClient.log(ivpex.getMessage());
+            }catch(RadiusException rex){
+                TestRadiusClient.log(rex.getMessage());
             }
-        }catch(InvalidParameterException ivpex){
-            TestRadiusClient.log(ivpex.getMessage());
-        }catch(java.net.UnknownHostException uhex){
-            TestRadiusClient.log(uhex.getMessage());
-        }catch(java.io.IOException ioex){
-            TestRadiusClient.log(ioex.getMessage());
-        }catch(RadiusException rex){
-            TestRadiusClient.log(rex.getMessage());
-        }catch(NoSuchAlgorithmException nsaex){
-            TestRadiusClient.log(nsaex.getMessage());
         }
     }
     public static boolean authenticate(RadiusClient rc, String userPass,  byte[] callingStationId) throws InvalidParameterException,
@@ -92,7 +106,7 @@ public class TestRadiusClient{
         if(callingStationId != null){
             ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
             try{
-                rc.setUserAttribute(RadiusClient.CALLING_STATION_ID, callingStationId, reqAttributes);
+                rc.setUserAttribute(RadiusAttributeValues.CALLING_STATION_ID, callingStationId, reqAttributes);
             }catch(InvalidParameterException ivpex){
                 TestRadiusClient.log(ivpex.getMessage());
             }
