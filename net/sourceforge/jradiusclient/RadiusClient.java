@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -190,26 +190,116 @@ public class RadiusClient implements RadiusValues
         return responseCode;
     }
     /**
+     *
+     * @param java.lang.String sessionID the session identifier we are accounting
+     *      against for this user
+     * @return boolean Whether or not this accounting request was successfull
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     */
+    public boolean startAccounting(String sessionID) throws IOException, UnknownHostException{
+        byte[] service = new byte[] {0,0,0,1};
+        try{
+            return this.account(service,sessionID);
+        }catch(RadiusException rex){
+            //only happens when service is too long or short so we ignore it
+        }
+        return false;
+    }
+    /**
+     *
+     * @param java.lang.String sessionID the session identifier we are accounting
+     *      against for this user
+     * @return boolean Whether or not this accounting request was successfull
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     */
+    public boolean updateAccounting(String sessionID) throws IOException, UnknownHostException{
+        byte[] service = new byte[] {0,0,0,3};
+        try{
+            return this.account(service,sessionID);
+        }catch(RadiusException rex){
+            //only happens when service is too long or short so we ignore it
+        }
+        return false;
+    }
+    /**
+     *
+     * @param java.lang.String sessionID the session identifier we are accounting
+     *      against for this user
+     * @return boolean Whether or not this accounting request was successfull
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     */
+    public boolean stopAccounting(String sessionID) throws IOException, UnknownHostException{
+        byte[] service = new byte[] {0,0,0,2};
+        try{
+            return this.account(service,sessionID);
+        }catch(RadiusException rex){
+            //only happens when service is too long or short so we ignore it
+        }
+        return false;
+    }
+    /**
+     *
+     * @param java.lang.String sessionID the session identifier we are accounting
+     *      against for this user
+     * @return boolean Whether or not this accounting request was successfull
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     */
+    public boolean enableAccounting(String sessionID) throws IOException, UnknownHostException{
+        byte[] service = new byte[] {0,0,0,7};
+        try{
+            return this.account(service,sessionID);
+        }catch(RadiusException rex){
+            //only happens when service is too long or short so we ignore it
+        }
+        return false;
+    }
+    /**
+     *
+     * @param java.lang.String sessionID the session identifier we are accounting
+     *      against for this user
+     * @return boolean Whether or not this accounting request was successfull
+     * @exception java.io.IOException
+     * @exception java.net.UnknownHostException
+     */
+    public boolean disableAccounting(String sessionID) throws IOException, UnknownHostException{
+        byte[] service = new byte[] {0,0,0,8};
+        try{
+            return this.account(service,sessionID);
+        }catch(RadiusException rex){
+            //only happens when service is too long or short so we ignore it
+        }
+        return false;
+    }
+    /**
      * This method performs the job of sending accounting information for the
      * current user to the radius accounting server.
+     * @param byte[] service the type of accounting we are going to do MUST BE 4 BYTES LONG
+     * @param java.lang.String sessionID the session identifier we are accounting
+     *      against for this user
      * @return boolean Whether or not this accounting request was successfull
      * @exception java.io.IOException
      * @exception java.net.UnknownHostException
      * @exception com.flatrock.util.radius.RadiusException
      */
-    public boolean account() throws IOException, UnknownHostException, RadiusException{
+    private boolean account(byte[] service, String sessionId) throws IOException,
+                                        UnknownHostException, RadiusException{
         byte code = RadiusClient.ACCOUNTING_REQUEST;
         byte identifier = this.getNextIdentifier();
-        byte [] service = new byte [4];
-        service[0] = 0;
-        service[1] = 0;
-        service[2] = 0;
-        service[3] = 1;
+        if(service.length != 4){
+            throw new RadiusException("The service byte array must have a length of 4");
+        }
+        if((sessionId == null) || (sessionId == "")){
+            sessionId = "session" + this.userName;
+        }
         ByteArrayOutputStream requestAttributes = new ByteArrayOutputStream();
         this.setAttribute(RadiusClient.USER_NAME, this.userName.getBytes(), requestAttributes);
         this.setAttribute(RadiusClient.NAS_IDENTIFIER, RadiusClient.NAS_ID, requestAttributes);
         this.setAttribute(RadiusClient.ACCT_STATUS_TYPE, service, requestAttributes);	// Acct-Status-Type
-        this.setAttribute(RadiusClient.ACCT_SESSION_ID, "session-id".getBytes(),requestAttributes);
+        this.setAttribute(RadiusClient.ACCT_SESSION_ID, sessionId.getBytes(),requestAttributes);
         this.setAttribute(RadiusClient.SERVICE_TYPE, service, requestAttributes);
 
         // Length of Packet is computed as follows, 20 bytes (corresponding to

@@ -5,7 +5,7 @@ import java.io.BufferedReader;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class TestRadiusClient{
     public static void main(String [] args)
@@ -52,11 +52,18 @@ public class TestRadiusClient{
             boolean returned = TestRadiusClient.authenticate(rc, userPass);
             if (returned){
                 TestRadiusClient.log("------------------------------------------------------");
-                returned = rc.account();
+                returned = rc.startAccounting(args[5]);
                 if (returned){
-                    TestRadiusClient.log("Accounting succeeded.");
+                    TestRadiusClient.log("Accounting start succeeded.");
                 }else{
-                    TestRadiusClient.log("Accounting failed.");
+                    TestRadiusClient.log("Accounting start failed.");
+                }
+                TestRadiusClient.log("------------------------------------------------------");
+                returned = rc.stopAccounting(args[5]);
+                if (returned){
+                    TestRadiusClient.log("Accounting stop succeeded.");
+                }else{
+                    TestRadiusClient.log("Accounting stop failed.");
                 }
                 TestRadiusClient.log("------------------------------------------------------");
             }
