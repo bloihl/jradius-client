@@ -47,7 +47,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.26 $
+ * @version $Revision: 1.27 $
  */
 public class RadiusClient
 {
@@ -500,7 +500,7 @@ public class RadiusClient
         return false;
     }
     /**
-     * This method encrypts the user password according to RFC 2865
+     * This method encrypts the plaintext user password according to RFC 2865
      * @param userPass java.lang.String the password to encrypt
      * @param requestAuthenticator byte[] the requestAuthenicator to use in the encryption
      * @return byte[] the byte array containing the encrypted password

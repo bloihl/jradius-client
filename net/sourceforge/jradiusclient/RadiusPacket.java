@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -41,15 +41,23 @@ public class RadiusPacket {
     public static final int STATUS_CLIENT       = 13;   // experimental
     public static final int RESERVED            = 255;
     /* ******************  Constant Packet Type Codes  *************************/
+    private static Object nextPacketIdLock = new Object();
+    private static int nextPacketId = 0;
     
     private int packetType = 0;
     private int packetIdentifier = 0;
     private Map attributes;
     /**
      * builds a type RadiusPacket with no Attributes set
+     * @param type int a PacketType to send.
+     * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
-    public RadiusPacket(final int type){
-        //most packets will be at least 4 attributes
+    public RadiusPacket(final int type) throws InvalidParameterException{
+        if((type < 1)||(type > 256)){
+            throw new InvalidParameterException("Type was out of bounds");
+        }
+        this.packetType = type;
+        this.packetIdentifier = getAndIncrementPacketIdentifier();
         this.attributes = new HashMap();
     }
     /**
@@ -59,10 +67,10 @@ public class RadiusPacket {
      * @throws InvalidParameterException if the attributeList is null or contains non-RadiusAttribute type entries
      */
     public RadiusPacket(final int type, final List attributeList) throws InvalidParameterException{
+        this(type);
         if((null == attributeList)||(attributeList.size() == 0)){
             throw new InvalidParameterException("Attribute List was null");
         }
-        this.attributes = new HashMap(attributeList.size());
         this.setAttributes(attributeList);
     }
     /**
@@ -128,6 +136,9 @@ public class RadiusPacket {
         //i.e. changes to our own internal provate data can happen this way!!!!
         return this.attributes.values();
     }
+    public int getPacketType(){
+        return this.packetType;
+    }
     /**
      * get the byte array 
      * @return a byte array of the raw bytes for all of the RadiusAttributes assigned to this RadiusPacket
@@ -146,6 +157,11 @@ public class RadiusPacket {
                 }
             }
             return bytes.toByteArray();
+        }
+    }
+    private static int getAndIncrementPacketIdentifier(){
+        synchronized (nextPacketIdLock){
+            return nextPacketId++;
         }
     }
 }
