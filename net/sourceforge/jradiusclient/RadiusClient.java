@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -748,8 +748,7 @@ public class RadiusClient implements RadiusValues
      * @param attribute byte[] the actual attribute byte array
      * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
      */
-    private void setAttribute(int type, int length, byte [] attribute, ByteArrayOutputStream requestAttributes)
-    {
+    private void setAttribute(int type, int length, byte [] attribute, ByteArrayOutputStream requestAttributes) {
         //1 byte: Type
         requestAttributes.write(type);
 
@@ -760,14 +759,42 @@ public class RadiusClient implements RadiusValues
         requestAttributes.write(attribute, 0, length);
     }
     /**
+     * This method is used to set a byte array attribute in a Request Attributes
+     * ByteArrayOutputStream that can be passed in to the authenticate method.
+     * Things that CANNOT/SHOULD NOT be set here are the
+     * <UL><LI>RadiusClient.USER_NAME</LI>
+     *     <LI>RadiusClient.USER_PASSWORD </LI>
+     *     <LI>RadiusClient.NAS_IDENTIFIER </LI>
+     *     <LI>RadiusClient.STATE </LI>
+     * </UL>
+     * If you attempt to set one you will get an InvalidParameterException
+     * @param type int attribute type
+     * @param attribute byte[] the actual attribute byte array
+     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
+     * @throws InvalidParameterException
+     */
+    public void setUserAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes)
+    throws InvalidParameterException {
+        //check to make sure type is not one we will set in authenticate method
+        if (type == RadiusClient.USER_NAME) {
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_NAME");
+        }else if (type == RadiusClient.USER_PASSWORD) {
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_PASSWORD");
+        }else if (type == RadiusClient.NAS_IDENTIFIER) {
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.NAS_IDENTIFIER");
+        }else if (type == RadiusClient.STATE){
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.STATE");
+        }
+        this.setAttribute(type, attribute.length, attribute, requestAttributes);
+    }
+    /**
      * This method is used to set a byte array attribute in the Request Attributes
      * portion of the packet.
      * @param type int attribute type
      * @param attribute byte[] the actual attribute byte array
      * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
      */
-    public void setAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes)
-    {
+    private void setAttribute(int type, byte [] attribute, ByteArrayOutputStream requestAttributes) {
         this.setAttribute(type, attribute.length, attribute, requestAttributes);
     }
     /**

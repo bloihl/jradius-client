@@ -6,7 +6,7 @@ import java.io.ByteArrayOutputStream;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.5 $
+ * @version $Revision: 1.6 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -82,7 +82,11 @@ public class TestRadiusClient{
     public static boolean authenticate(RadiusClient rc, String userPass,  byte[] callingStationId) throws InvalidParameterException,
     java.net.UnknownHostException, java.io.IOException, RadiusException{
         ByteArrayOutputStream reqAttributes = new ByteArrayOutputStream();
-        rc.setAttribute(RadiusClient.CALLED_STATION_ID,callingStationId, reqAttributes);
+        try{
+            rc.setUserAttribute(RadiusClient.CALLED_STATION_ID,callingStationId, reqAttributes);
+        }catch(InvalidParameterException ivpex){
+            System.out.println(ivpex);
+        }
         int returnCode = rc.authenticate(userPass, reqAttributes);
         boolean returned = false;
         TestRadiusClient.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++");
