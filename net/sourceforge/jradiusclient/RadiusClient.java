@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -814,6 +814,48 @@ public class RadiusClient implements RadiusValues
             throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.STATE");
         }
         this.setAttribute(type, attribute.length, attribute, requestAttributes);
+    }
+    /**
+     * This method is used to set a byte array attribute in a Request Attributes
+     * ByteArrayOutputStream that can be passed in to the authenticate method.
+     * Things that CANNOT/SHOULD NOT be set here are the
+     * <UL><LI>RadiusClient.USER_NAME</LI>
+     *     <LI>RadiusClient.USER_PASSWORD </LI>
+     *     <LI>RadiusClient.NAS_IDENTIFIER </LI>
+     *     <LI>RadiusClient.STATE </LI>
+     * </UL>
+     * If you attempt to set one you will get an InvalidParameterException
+     * @param type int attribute type
+     * @param subType int sub attribute type
+     * @param attribute byte[] the actual attribute byte array
+     * @param requestAttributes ByteArrayOutputStream the ByteArrayOutputStreamto write the attribute to
+     * @throws InvalidParameterException
+     * @author kay michael koehler koehler@remwave.com, koehler@buddy4mac.com, koehler@econo.de
+     */
+    public void setUserSubAttribute(int type, int subType, byte [] attribute, ByteArrayOutputStream requestAttributes)
+    throws InvalidParameterException {
+        if (type == RadiusClient.USER_NAME) {
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_NAME");
+        }else if (type == RadiusClient.USER_PASSWORD) {
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.USER_PASSWORD");
+        }else if (type == RadiusClient.NAS_IDENTIFIER) {
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.NAS_IDENTIFIER");
+        }else if (type == RadiusClient.STATE){
+            throw new InvalidParameterException("Cannot set attribute to one of type RadiusClient.STATE");
+        }
+        //1 byte: Type
+        requestAttributes.write(type);
+
+        //1 byte: length of the Type plus 4 bytes for the rest of this attribute (total of >=5 bytes)
+        requestAttributes.write(attribute.length + 4);
+
+        requestAttributes.write(subType);
+
+        //1 byte: length of the attribute plus 2 bytes for minimal length (total of >=3 bytes)
+        requestAttributes.write(attribute.length + 2);
+
+        //Value.length() bytes: the actual Value.
+        requestAttributes.write(attribute, 0, attribute.length);
     }
     /**
      * This method is used to set a byte array attribute in the Request Attributes
