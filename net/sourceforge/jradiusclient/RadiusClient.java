@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -76,7 +76,7 @@ public class RadiusClient implements RadiusValues
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
      *                              instance of the MD5 algorithm.
-     * @exception com.flatrock.util.InvalidParameterException If an invalid hostname
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If an invalid hostname
      *                              (null or empty string), an invalid port
      *                              (port < 0 or port > 65536) or an invalid
      *                              shared secret (null, shared secret can be
@@ -103,7 +103,7 @@ public class RadiusClient implements RadiusValues
      * @exception java.net.SocketException If we could not create the necessary socket
      * @exception java.security.NoSuchAlgorithmException If we could not get an
      *                              instance of the MD5 algorithm.
-     * @exception com.flatrock.util.InvalidParameterException If an invalid hostname
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If an invalid hostname
      *                              (null or empty string), an invalid
      *                              port ( port < 0 or port > 65536)
      *                              or an invalid shared secret (null, shared
@@ -124,8 +124,8 @@ public class RadiusClient implements RadiusValues
      *      RadiusClient.ACCESS_REJECT or RadiusClient.ACCESS_CHALLENGE
      * @exception java.io.IOException
      * @exception java.net.UnknownHostException
-     * @exception com.flatrock.util.radius.RadiusException
-     * @exception com.flatrock.util.InvalidParameterException
+     * @exception net.sourceforge.jradiusclient.exception.RadiusException
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
      */
     public int authenticate(String userPass)
     throws IOException, UnknownHostException, RadiusException, InvalidParameterException {
@@ -283,7 +283,7 @@ public class RadiusClient implements RadiusValues
      * @return boolean Whether or not this accounting request was successfull
      * @exception java.io.IOException
      * @exception java.net.UnknownHostException
-     * @exception com.flatrock.util.radius.RadiusException
+     * @exception net.sourceforge.jradiusclient.exception.radius.RadiusException
      */
     private boolean account(byte[] service, String sessionId) throws IOException,
                                         UnknownHostException, RadiusException{
@@ -483,7 +483,7 @@ public class RadiusClient implements RadiusValues
      * @param hostname java.lang.String The name of the host the RADIUS server is
      *                          running on. Can be either the name or the
      *                          dotted-quad IP address
-     * @exception com.flatrock.util.InvalidParameterException If the hostname is null,
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the hostname is null,
      *                          empty or all blanks
      */
     private void setHostname(String hostname) throws InvalidParameterException{
@@ -505,7 +505,7 @@ public class RadiusClient implements RadiusValues
     /**
      * This method sets the port to be used for authentication
      * @param port int
-     * @exception com.flatrock.util.InvalidParameterException If the port is less
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the port is less
      *                          than 0 or greater than 65535
      */
     public void setAuthPort(int port) throws InvalidParameterException
@@ -526,7 +526,7 @@ public class RadiusClient implements RadiusValues
     /**
      * This method sets the port to be used for accounting
      * @param port int
-     * @exception com.flatrock.util.InvalidParameterException If the port is less
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the port is less
      *                          than 0 or greater than 65535
      */
     public void setAcctPort(int port) throws InvalidParameterException
@@ -547,7 +547,7 @@ public class RadiusClient implements RadiusValues
     /**
      * This method sets the user name to be used for authentication
      * @param user_name java.lang.String
-     * @exception com.flatrock.util.InvalidParameterException If the username is null,
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the username is null,
      *                          empty or all blanks
      */
     public void setUserName(String username) throws InvalidParameterException {
@@ -569,7 +569,7 @@ public class RadiusClient implements RadiusValues
      * This method sets the secret value that the Radius Client shares with the
      * RADIUS Server.
      * @param sharedSecret java.lang.String
-     * @exception com.flatrock.util.InvalidParameterException If the shared secret is null,
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the shared secret is null,
      *                          or the empty string
      */
     private void setSharedSecret(String sharedSecret) throws InvalidParameterException {
@@ -595,7 +595,7 @@ public class RadiusClient implements RadiusValues
      * This method sets the timeout period on a recieve of a response from the
      * RADIUS Server.
      * @param socket_timeout int a positive timeout value
-     * @exception com.flatrock.util.InvalidParameterException If the timeout value is
+     * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException If the timeout value is
      *                          less than 0. a 0 value for timeout means that the
      *                          request will block until a response is recieved,
      *                          which is not recommended due to the nature of RADIUS
@@ -614,7 +614,7 @@ public class RadiusClient implements RadiusValues
      * supplies it to the user, who should them use it to build a new password
      * and re-authenticate.
      *@return java.lang.String the challenge message to display to the user
-     *@exception com.flatrock.util.radius.RadiusException
+     *@exception net.sourceforge.jradiusclient.exception.RadiusException
      */
     public String getReplyMessage() throws RadiusException{
         if(this.responseAttributes == null){
@@ -631,7 +631,7 @@ public class RadiusClient implements RadiusValues
      * supplies it to the user, who should them use it to build a new password
      * and re-authenticate.
      *@return java.lang.String the challenge message to display to the user
-     *@exception com.flatrock.util.radius.RadiusException
+     *@exception net.sourceforge.jradiusclient.exception.RadiusException
      */
     public String getChallengeMessage() throws RadiusException{
         return this.getReplyMessage();
@@ -639,7 +639,7 @@ public class RadiusClient implements RadiusValues
     /**
      * This method extracts the SessionTimeout returned by a RADIUS Server
      *@return java.lang.Integer the session timeout for the user
-     *@exception com.flatrock.util.radius.RadiusException
+     *@exception net.sourceforge.jradiusclient.exception.RadiusException
      */
     public Integer getSessionTimeout() throws RadiusException{
         if(this.responseAttributes == null){
@@ -654,7 +654,7 @@ public class RadiusClient implements RadiusValues
     /**
      * This method extracts the Framed IP Address returned by a RADIUS Server
      *@return java.lang.String the Framed Ip Address
-     *@exception com.flatrock.util.radius.RadiusException
+     *@exception net.sourceforge.jradiusclient.exception.RadiusException
      */
     public String getFramedIPAddress() throws RadiusException{
         if(this.responseAttributes == null){
@@ -704,7 +704,7 @@ public class RadiusClient implements RadiusValues
      * This method returns the bytes sent in the STATE attribute of the RADIUS
      * Server's response to a request
      *@return java.lang.String the challenge message to display to the user
-     *@exception com.flatrock.util.radius.RadiusException
+     *@exception net.sourceforge.jradiusclient.exception.RadiusException
      */
     private byte[] getStateAttributeFromResponse() throws RadiusException{
         if(this.responseAttributes == null){
@@ -769,7 +769,7 @@ public class RadiusClient implements RadiusValues
      * @param requestIdentifier byte
      * @param requestAuthenticator byte[]
      * @return int the code value from the radius response packet
-     * @exception com.flatrock.util.radius.RadiusException
+     * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception java.io.IOException
      */
     private int checkRadiusPacket(DatagramPacket packet,
@@ -1034,7 +1034,7 @@ public class RadiusClient implements RadiusValues
      * This method returns a string representation of this
      * <code>RadiusClient</code>.
      *
-     * @return a string representation of this <code>RadiusPrincipal</code>.
+     * @return a string representation of this object.
      */
     public String toString(){
         StringBuffer sb = new StringBuffer("RadiusClient: HostName = ");
