@@ -6,19 +6,13 @@ import gnu.getopt.LongOpt;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
 import java.util.Iterator;
-import net.sourceforge.jradiusclient.*;
-import net.sourceforge.jradiusclient.attributes.*;
 import net.sourceforge.jradiusclient.exception.*;
-import net.sourceforge.jradiusclient.jaas.*;
 import net.sourceforge.jradiusclient.packets.*;
 import net.sourceforge.jradiusclient.util.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
