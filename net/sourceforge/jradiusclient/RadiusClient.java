@@ -30,7 +30,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.8 $
+ * @version $Revision: 1.9 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -164,11 +164,12 @@ public class RadiusClient implements RadiusValues
         this.setAttribute(RadiusClient.USER_NAME, this.userName.getBytes(), requestAttributes);
         // USER_PASSWORD
         if(userPass.length() > 0){//otherwise we don't add it to the Attributes
-            if (userPass.length() > 16){
+            /*if (userPass.length() > 16){
                 userPass = userPass.substring(0, 16);
-            }
+            }*/
+            byte [] encryptedPass = this.encryptPass(userPass, requestAuthenticator);
             //(encryptPass gives ArrayIndexOutOfBioundsException if password is of zero length)
-            this.setAttribute(RadiusClient.USER_PASSWORD, userPass.length(), this.encryptPass(userPass, requestAuthenticator), requestAttributes);
+            this.setAttribute(RadiusClient.USER_PASSWORD, encryptedPass.length, encryptedPass, requestAttributes);
         }
         //set a STATE attribute IF it is there (for Challenge responses)
         try{
@@ -348,10 +349,13 @@ public class RadiusClient implements RadiusValues
     private byte [] encryptPass(String userPass, byte [] requestAuthenticator) {
         // encrypt the password
         //the password must be a multiple of 16 bytes and less than or equal
-        //to 128 bytes if it isn't a multiple of 16 bytes fill itout with zeroes
-        //to make it a multiple of 16 bytes if it is greater than 128 bytes
+        //to 128 bytes. If it isn't a multiple of 16 bytes fill it out with zeroes
+        //to make it a multiple of 16 bytes. If it is greater than 128 bytes
         //truncate it at 128
 
+        if (userPass.length() > 128){
+            userPass = userPass.substring(0, 128);
+        }
         // Transformation de la chaine en tableau d'octet pour hachage MD5.
         byte userPassBytes[] = userPass.getBytes();
         // declare the byte array to hold the final product
