@@ -41,7 +41,7 @@
              destdir="docs"
              author="true"
              use="true"
-             windowtitle="Approuter API">
+             windowtitle="JRadiusClient">
     </javadoc>
   </target>
 
