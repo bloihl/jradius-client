@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.23 $
+ * @version $Revision: 1.24 $
  */
 public class RadiusClient implements RadiusValues
 {
@@ -188,7 +188,7 @@ public class RadiusClient implements RadiusValues
     /**
      * This method performs the job of authenticating the specified user against
      * the radius server.
-     * @param userPass java.lang.String
+     * @param userPass java.lang.String plaintext userPass to be encrypted using PAP algorithm
      * @param requestAttributes ByteArrayOutputStream
      * @param int retries must be zero or greater if it is zero default value of 3 will be used
      * @return int Will be one of three possible values RadiusClient.ACCESS_ACCEPT,
@@ -1036,21 +1036,6 @@ public class RadiusClient implements RadiusValues
         int packetLength = packet.getLength();
         ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
         DataInputStream input = new DataInputStream(bais);
-
-/* ***************************************************************
-    0                   1                   2                   3
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |     code      |  identifier   |            Length             |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                                                               |
-   |                     Response Authenticator                    |
-   |                                                               |
-   |                                                               |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Attributes ...
-   +-+-+-+-+-+-+-+-+-+-+-+-+-
-*****************************************************************/
         byte code = input.readByte();
         returnCode = code & 0xff;
         //now check the identifiers to see if they match
@@ -1125,107 +1110,15 @@ public class RadiusClient implements RadiusValues
         ByteArrayOutputStream baos 	= new ByteArrayOutputStream();
         DataOutputStream output 	= new DataOutputStream(baos);
         DatagramPacket packet_out 	= null;
-// A)
-/* ***************************************************************
-    0                   1                   2                   3
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |     Code      |  Identifier   |            Length             |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                                                               |
-   |                     Request Authenticator                     |
-   |                                                               |
-   |                                                               |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Attributes ...
-   +-+-+-+-+-+-+-+-+-+-+-+-+-
 
-   Code
-
-      The Code field is one octet, and identifies the type of RADIUS
-      packet.  When a packet is received with an invalid Code field, it
-      is silently discarded.
-
-      RADIUS Codes (decimal) are assigned as follows:
-
-        1       Access-Request
-        2       Access-Accept
-        3       Access-Reject
-        4       Accounting-Request
-        5       Accounting-Response
-       11       Access-Challenge
-       12       Status-Server (experimental)
-       13       Status-Client (experimental)
-      255       Reserved
-
-   Codes 4 and 5 are covered in the RADIUS Accounting document [5].
-   Codes 12 and 13 are reserved for possible use, but are not further
-   mentioned here.
-*******************************************************************/
-//1 byte: Code
+        //1 byte: Code
         output.writeByte(code);
-// B)
-/* *****************************************************************
-   Identifier
-
-      The Identifier field is one octet, and aids in matching requests
-      and replies.  The RADIUS server can detect a duplicate request if
-      it has the same client source IP address and source UDP port and
-      Identifier within a short span of time.
-*******************************************************************/
-//1 byte: identifier
+        //1 byte: identifier
         output.writeByte(identifier);
-// C)
-/* ****************************************************************
-   Length
-
-      The Length field is two octets.  It indicates the length of the
-      packet including the Code, Identifier, Length, Authenticator and
-      Attribute fields.  Octets outside the range of the Length field
-      MUST be treated as padding and ignored on reception.  If the
-      packet is shorter than the Length field indicates, it MUST be
-      silently discarded.  The minimum length is 20 and maximum length
-      is 4096.
-******************************************************************/
-//2 byte: Length
+        //2 byte: Length
         output.writeShort(length);
-// D)
-/* ****************************************************************
-   Request Authenticator
-
-         In Access-Request Packets, the Authenticator value is a 16
-         octet random number, called the Request Authenticator.  The
-         value SHOULD be unpredictable and unique over the lifetime of a
-         secret (the password shared between the client and the RADIUS
-         server), since repetition of a request value in conjunction
-         with the same secret would permit an attacker to reply with a
-         previously intercepted response.  Since it is expected that the
-         same secret MAY be used to authenticate with servers in
-         disparate geographic regions, the Request Authenticator field
-         SHOULD exhibit global and temporal uniqueness.
-
-         The Request Authenticator value in an Access-Request packet
-         SHOULD also be unpredictable, lest an attacker trick a server
-         into responding to a predicted future request, and then use the
-         response to masquerade as that server to a future Access-
-         Request.
-
-         Although protocols such as RADIUS are incapable of protecting
-         against theft of an authenticated session via realtime active
-         wiretapping attacks, generation of unique unpredictable
-         requests can protect against a wide range of active attacks
-         against authentication.
-
-         The NAS and RADIUS server share a secret.  That shared secret
-         followed by the Request Authenticator is put through a one-way
-         MD5 hash to create a 16 octet digest value which is xored with
-         the password entered by the user, and the xored result placed
-         in the User-Password attribute in the Access-Request packet.
-         See the entry for User-Password in the section on Attributes
-         for a more detailed description.
-******************************************************************/
-//16 bytes: Request Authenticator
-//only write 16 of them if there are more, which there better not be
+        //16 bytes: Request Authenticator
+        //only write 16 of them if there are more, which there better not be
         output.write(requestAuthenticator, 0, 16);
 
         output.write(requestAttributes, 0, requestAttributes.length);
