@@ -9,7 +9,7 @@ package net.sourceforge.jradiusclient;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public interface RadiusValues
 {
@@ -191,4 +191,24 @@ public interface RadiusValues
     public static final int WIRELESS_IEEE_802_11	= 19;
 
     /* ******************    Constant Attribute Types  *************************/
+    /* *****************  Attributes and sub attributes for SIP ***************/
+
+     // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
+     public static final int DIGEST_RESPONSE         = 206;
+     public static final int DIGEST_ATTRIBUTE        = 207;
+
+
+     // SIP DIGEST AUTH - draft-sterman-aaa-sip-00
+     public static final int SIP_REALM                   = 1;
+     public static final int SIP_NONCE                   = 2;
+     public static final int SIP_METHOD                  = 3;
+     public static final int SIP_URI                     = 4;
+     public static final int SIP_QOP                     = 5;
+     public static final int SIP_ALGORITHM               = 6;
+     public static final int SIP_BODY_DIGEST             = 7;
+     public static final int SIP_CNONCE                  = 8;
+     public static final int SIP_NONCE_COUNT             = 9;
+     public static final int SIP_USER_NAME               = 10;
+   /* *****************  Attributes and sub attributes for SIP ***************/
+
 }
