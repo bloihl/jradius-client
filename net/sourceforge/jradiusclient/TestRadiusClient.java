@@ -18,7 +18,7 @@ import net.sourceforge.jradiusclient.packets.*;
 import net.sourceforge.jradiusclient.util.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -120,10 +120,12 @@ public class TestRadiusClient{
                 switch(accessResponse.getPacketType()){
                     case RadiusPacket.ACCESS_ACCEPT:
                         TestRadiusClient.log("User " + userName + " authenticated");
+                        printAttributes(accessResponse);
                         basicAccount(rc,userName);
                         break;
                     case RadiusPacket.ACCESS_REJECT:
                         TestRadiusClient.log("User " + userName + " NOT authenticated");
+                        printAttributes(accessResponse);
                         break;
                     case RadiusPacket.ACCESS_CHALLENGE:
                         String reply = new String(accessResponse.getAttribute(RadiusAttributeValues.REPLY_MESSAGE).getValue());
@@ -220,10 +222,12 @@ public class TestRadiusClient{
                 switch(accessResponse.getPacketType()){
                     case RadiusPacket.ACCESS_ACCEPT:
                         TestRadiusClient.log("User " + userName + " authenticated");
-                    advAccount(rc,userName);
+                        printAttributes(accessResponse);
+                        advAccount(rc,userName);
                         break;
                     case RadiusPacket.ACCESS_REJECT:
                         TestRadiusClient.log("User " + userName + " NOT authenticated");
+                        printAttributes(accessResponse);
                         break;
                     case RadiusPacket.ACCESS_CHALLENGE:
                         String reply = new String(accessResponse.getAttribute(RadiusAttributeValues.REPLY_MESSAGE).getValue());

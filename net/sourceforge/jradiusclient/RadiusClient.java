@@ -21,20 +21,20 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * Released under the LGPL<BR>
  *
  * This class provides basic functionality required to implement a NAS as
- * defined by the RADIUS protocol as specified in RFC 2865 and RFC 2866. 
- * This implementation is stateless and not thread safe, i.e. since the 
+ * defined by the RADIUS protocol as specified in RFC 2865 and RFC 2866.
+ * This implementation is stateless and not thread safe, i.e. since the
  * user name could be changed by the current thread or any other thread,
- * it is difficult to ensure that the responseAttributes correlate to the 
- * request we think we are dealing with. It is up to the user of this class 
+ * it is difficult to ensure that the responseAttributes correlate to the
+ * request we think we are dealing with. It is up to the user of this class
  * to ensure these things at this point. A future release may change this class
- * to a stateful, threadsafe object, but it works for now. Users of this class 
- * must also manage building their own request attributes and submitting them with 
+ * to a stateful, threadsafe object, but it works for now. Users of this class
+ * must also manage building their own request attributes and submitting them with
  * their call to authenticate. For example a programmer using this library, wanting
  * to do chap authentication needs to generate the random challenge, send it to
- *  the user, who generates the MD5 of 
- * <UL><LI>a self generated CHAP identifier (a byte)</LI> 
- * <LI>their password</LI> 
- * <LI>and the CHAP challenge.</LI></UL>(see RFC 2865 section 2.2) The user 
+ *  the user, who generates the MD5 of
+ * <UL><LI>a self generated CHAP identifier (a byte)</LI>
+ * <LI>their password</LI>
+ * <LI>and the CHAP challenge.</LI></UL>(see RFC 2865 section 2.2) The user
  * software returns the CHAP Identifier and the MD5 result and the programmer using RadiusClient
  * sets that as the CHAP Password. The programmer also sets the CHAP-Challenge attribute and
  * sends that to the Radius Server for authentication.
@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.33 $
+ * @version $Revision: 1.34 $
  */
 public class RadiusClient
 {
@@ -152,13 +152,13 @@ public class RadiusClient
     /**
      * This method performs the job of authenticating the given <code>RadiusPacket</code> against
      * the radius server.
-     * 
-     * @param RadiusPacket containing all of the <code>RadiusAttributes</code> for this request. This 
-     * <code>RadiusPacket</code> must include the USER_NAME attribute and be of type ACCEES_REQUEST. 
-     * If the USER_PASSWORD attribute is set it must contain the plaintext bytes, we will encode the 
-     * plaintext to send to the server with a REVERSIBLE algorithm. We will set the NAS_IDENTIFIER 
+     *
+     * @param RadiusPacket containing all of the <code>RadiusAttributes</code> for this request. This
+     * <code>RadiusPacket</code> must include the USER_NAME attribute and be of type ACCEES_REQUEST.
+     * If the USER_PASSWORD attribute is set it must contain the plaintext bytes, we will encode the
+     * plaintext to send to the server with a REVERSIBLE algorithm. We will set the NAS_IDENTIFIER
      * Attribute, so even if it is set in the RadiusPacket we will overwrite it
-     * 
+     *
      * @return RadiusPacket containing the response attributes for this request
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
@@ -170,14 +170,14 @@ public class RadiusClient
     /**
      * This method performs the job of authenticating the given <code>RadiusPacket</code> against
      * the radius server.
-     * 
-     * @param RadiusPacket containing all of the <code>RadiusAttributes</code> for this request. This 
-     * <code>RadiusPacket</code> must include the USER_NAME attribute and be of type ACCEES_REQUEST. 
-     * If the USER_PASSWORD attribute is set it must contain the plaintext bytes, we will encode the 
-     * plaintext to send to the server with a REVERSIBLE algorithm. We will set the NAS_IDENTIFIER 
+     *
+     * @param RadiusPacket containing all of the <code>RadiusAttributes</code> for this request. This
+     * <code>RadiusPacket</code> must include the USER_NAME attribute and be of type ACCEES_REQUEST.
+     * If the USER_PASSWORD attribute is set it must contain the plaintext bytes, we will encode the
+     * plaintext to send to the server with a REVERSIBLE algorithm. We will set the NAS_IDENTIFIER
      * Attribute, so even if it is set in the RadiusPacket we will overwrite it
      * @param int retries must be zero or greater, if it is zero default value of 3 will be used
-     * 
+     *
      * @return RadiusPacket containing the response attributes for this request
      * @exception net.sourceforge.jradiusclient.exception.RadiusException
      * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
@@ -234,182 +234,10 @@ public class RadiusClient
         }
         return responsePacket;//won't ever return null
     }
-//    /**
-//     *
-//     * @param java.lang.String sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean startAccounting(String sessionID) throws IOException, UnknownHostException{
-//        return this.startAccounting(sessionID, null);
-//    }
-//    /**
-//     *
-//     * @param java.lang.String sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean updateAccounting(String sessionID) throws IOException, UnknownHostException{
-//        return this.updateAccounting(sessionID, null);
-//    }
-//    /**
-//     *
-//     * @param java.lang.String sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean stopAccounting(String sessionID) throws IOException, UnknownHostException{
-//        return this.stopAccounting(sessionID, null);
-//    }
-//    /**
-//     *
-//     * @param java.lang.String sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean enableAccounting(String sessionID) throws IOException, UnknownHostException{
-//        return this.enableAccounting(sessionID, null);
-//    }
-//    /**
-//     *
-//     * @param java.lang.String sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean disableAccounting(String sessionID) throws IOException, UnknownHostException{
-//        return this.disableAccounting(sessionID, null);
-//    }
-//    /**
-//     *
-//     * @param sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean startAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-//            throws IOException, UnknownHostException
-//    {
-//        byte[] service = new byte[]{0, 0, 0, 1};
-//        try{
-//            return this.account(service, sessionID, requestAttributes);
-//        }catch (RadiusException rex){
-//            //only happens when service is too long or short so we ignore it
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     *
-//     * @param sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean updateAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-//            throws IOException, UnknownHostException
-//    {
-//        byte[] service = new byte[]{0, 0, 0, 3};
-//        try{
-//            return this.account(service, sessionID, requestAttributes);
-//        }catch (RadiusException rex){
-//            //only happens when service is too long or short so we ignore it
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     *
-//     * @param sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @param requestAttributes Any additional attributes you might require to add to the accounting packet. (J.B. 25/08/2003)
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean stopAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-//            throws IOException, UnknownHostException
-//    {
-//        byte[] service = new byte[]{0, 0, 0, 2};
-//        try{
-//            return this.account(service, sessionID, requestAttributes);
-//        }catch (RadiusException rex){
-//            //only happens when service is too long or short so we ignore it
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     *
-//     * @param sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean enableAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-//            throws IOException, UnknownHostException
-//    {
-//        byte[] service = new byte[]{0, 0, 0, 7};
-//        try{
-//            return this.account(service, sessionID, requestAttributes);
-//        }catch (RadiusException rex){
-//            //only happens when service is too long or short so we ignore it
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     *
-//     * @param sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successfull
-//     * @exception java.io.IOException
-//     * @exception java.net.UnknownHostException
-//     */
-//    public boolean disableAccounting(String sessionID, ByteArrayOutputStream requestAttributes)
-//            throws IOException, UnknownHostException
-//    {
-//        byte[] service = new byte[]{0, 0, 0, 8};
-//        try{
-//            return this.account(service, sessionID, requestAttributes);
-//        }catch (RadiusException rex){
-//            //only happens when service is too long or short so we ignore it
-//        }
-//        return false;
-//    }
-//    /**
-//     * This method performs the job of sending accounting information for the
-//     * current user to the radius accounting server.
-//     * @param byte[] service the type of accounting we are going to do MUST BE 4 BYTES LONG
-//     * @param java.lang.String sessionID the session identifier we are accounting
-//     *      against for this user
-//     * @return boolean Whether or not this accounting request was successful
-//     * @exception net.sourceforge.jradiusclient.exception.radius.RadiusException
-//     */
-//    private boolean account(byte[] service, String sessionId) throws RadiusException{
-//        if (service.length != 4){
-//            throw new RadiusException("The service byte array must have a length of 4");
-//        }
-//        return this.account(service, sessionId, null);
-//    }
     /**
       * This method performs the job of sending accounting information for the
       * current user to the radius accounting server.
-      * @param requestPacket Any  request attributes to add to the accounting packet. 
+      * @param requestPacket Any  request attributes to add to the accounting packet.
       * @return RadiusPacket a packet containing the response from the Radius server
       * @exception net.sourceforge.jradiusclient.exception.RadiusException
       * @exception net.sourceforge.jradiusclient.exception.InvalidParameterException
@@ -435,7 +263,7 @@ public class RadiusClient
         }
         byte identifier = requestPacket.getPacketIdentifier();//RadiusClient.getNextIdentifier();
         requestPacket.setAttribute(new RadiusAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID));
-        
+
         // Length of Packet is computed as follows, 20 bytes (corresponding to
         // length of code + Identifier + Length + Request Authenticator) +
         // each attribute has a length computed as follows: 1 byte for the type +
@@ -444,7 +272,7 @@ public class RadiusClient
         short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributesBytes.length);
         byte[] requestAuthenticator =
             this.makeRFC2866RequestAuthenticator(code, identifier, length, requestAttributesBytes);
-        
+
         DatagramPacket packet =
             this.composeRadiusPacket(this.getAcctPort(), code, identifier, length, requestAuthenticator, requestAttributesBytes);
         //send the request / recieve the response
@@ -738,12 +566,12 @@ public class RadiusClient
             throw new InvalidParameterException("A negative timeout value is not allowed!");
         }else{//everything is a-ok
             this.socketTimeout = socket_timeout;
-	    try{
-		if(null == this.socket) {//prevent NPE
-		    this.socket = new DatagramSocket();
-		}
-		this.socket.setSoTimeout(this.socketTimeout);
-	    }catch(SocketException sex){}
+        try{
+        if(null == this.socket) {//prevent NPE
+            this.socket = new DatagramSocket();
+        }
+        this.socket.setSoTimeout(this.socketTimeout);
+        }catch(SocketException sex){}
         }
     }
     /**
@@ -796,7 +624,7 @@ public class RadiusClient
                     }
                 }
             }
-            
+
             RadiusPacket responsePacket = new RadiusPacket(returnCode,identifierByte);
             //now parse out the responseAttributeBytes into the responseAttributes hashtable
             int attributesLength = responseAttributeBytes.length;
@@ -805,7 +633,7 @@ public class RadiusClient
                 int attributeLength;
                 byte[] attributeValue;
                 DataInputStream attributeInput = new DataInputStream(new ByteArrayInputStream(responseAttributeBytes));
-                
+
                 for (int left=0; left < attributesLength; ){
                     attributeType = (attributeInput.readByte() & 0xff);
                     attributeLength = attributeInput.readByte() & 0xff;
@@ -858,14 +686,14 @@ public class RadiusClient
             //16 bytes: Request Authenticator
             //only write 16 of them if there are more, which there better not be
             output.write(requestAuthenticator, 0, 16);
-    
+
             output.write(requestAttributes, 0, requestAttributes.length);
-    
+
             packet_out = new DatagramPacket(new byte[length], length);
             packet_out.setPort(port);
             packet_out.setAddress(this.hostname);
             packet_out.setLength(length);
-    
+
             packet_out.setData(baos.toByteArray());
             output.close();
             baos.close();

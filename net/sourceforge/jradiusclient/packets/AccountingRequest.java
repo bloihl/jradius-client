@@ -12,9 +12,14 @@ import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class AccountingRequest extends RadiusPacket {
+    public final static byte[] START_ACCOUNTING_SERVICE_TYPE = new byte[]{0,0,0,1};
+    public final static byte[] STOP_ACCOUNTING_SERVICE_TYPE = new byte[]{0,0,0,2};
+    public final static byte[] UPDATE_ACCOUNTING_SERVICE_TYPE = new byte[]{0,0,0,3};
+    public final static byte[] ENABLE_ACCOUNTING_SERVICE_TYPE = new byte[]{0,0,0,7};
+    public final static byte[] DISABLE_ACCOUNTING_SERVICE_TYPE = new byte[]{0,0,0,8};
     private boolean initialized = false;
     /**
      * construct an account request packet for this session
