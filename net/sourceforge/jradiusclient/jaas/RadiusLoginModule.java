@@ -1,22 +1,16 @@
 package net.sourceforge.jradiusclient.jaas;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.spi.LoginModule;
-//import javax.security.auth.login.AccountExpiredException;
 import javax.security.auth.login.CredentialExpiredException;
-//import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
-import net.sourceforge.jradiusclient.RadiusPacket;
-import net.sourceforge.jradiusclient.RadiusAttribute;
 import net.sourceforge.jradiusclient.RadiusAttributeValues;
 import net.sourceforge.jradiusclient.RadiusClient;
+import net.sourceforge.jradiusclient.RadiusPacket;
+import net.sourceforge.jradiusclient.packets.PapRadiusPacket;
 import net.sourceforge.jradiusclient.exception.InvalidParameterException;
 import net.sourceforge.jradiusclient.exception.RadiusException;
 
@@ -24,7 +18,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * This is an implementation of javax.security.auth.spi.LoginModule specific to
  * using a RADIUS Server for authentication.
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 public class RadiusLoginModule implements LoginModule {
 
@@ -186,20 +180,16 @@ public class RadiusLoginModule implements LoginModule {
                                                  radiusCallback.getAuthPort(),
                                                  radiusCallback.getAcctPort(),
                                                  radiusCallback.getSharedSecret());
-            RadiusPacket accessRequest = new RadiusPacket();
-            this.authenticate(userPassword, radiusCallback.getCallingStationID(), radiusCallback.getNumRetries() );
+            RadiusPacket accessRequest = new PapRadiusPacket(userName,String.valueOf(userPassword));
+            this.authenticate(accessRequest, radiusCallback.getNumRetries() );
         }catch(InvalidParameterException ivpex){
             StringBuffer sb1 = new StringBuffer("Configuration of the RADIUS client is incorrect. ");
             sb1.append(ivpex.getMessage());
             throw new LoginException(sb1.toString());
-        }catch(SocketException sex){
+        }catch(RadiusException rex){
             StringBuffer sb2 = new StringBuffer("Configuration of the RADIUS client is incorrect. ");
-            sb2.append(sex.getMessage());
+            sb2.append(rex.getMessage());
             throw new LoginException(sb2.toString());
-        }catch(NoSuchAlgorithmException nsaex){
-            StringBuffer sb3 = new StringBuffer("Configuration of the RADIUS client is incorrect. ");
-            sb3.append(nsaex.getMessage());
-            throw new LoginException(sb3.toString());
         }
         //finally clear the password in memory
         for(int i = 0; i < userPassword.length;i++){
@@ -218,40 +208,30 @@ public class RadiusLoginModule implements LoginModule {
      * @exception LoginException If this <code>LoginModule</code> can't perform
      *                           the requested authentication
      */
-    private void authenticate(char[] password, String callingStationID, int numRetries) throws LoginException {
+    private void authenticate( final RadiusPacket accessRequest, final int numRetries) throws LoginException {
         try {
-            ByteArrayOutputStream requestAttributes = null;
-            if(callingStationID != null){
-                requestAttributes = new ByteArrayOutputStream();
-                try{
-                    this.radiusClient.setUserAttribute(RadiusClient.CALLING_STATION_ID, callingStationID.getBytes(), requestAttributes);
-                }catch(InvalidParameterException ivpex){
-                    //only get this if setting to a type of RadiusClient.USER_NAME,
-                    //RadiusClient.USER_PASSWORD, RadiusClient.NAS_IDENTIFIER, or RadiusClient.STATE
-                    //set requestAttributes back to null and try anyway
-                    requestAttributes = null;
-                }
-            }
             //requestAttributes can be null, the radiusClient.authenticate method checks for this and handles it fine - BL
-            switch (this.radiusClient.authenticate(String.valueOf(password), requestAttributes, numRetries)) {
-                case RadiusClient.ACCESS_ACCEPT:
+            RadiusPacket accessResponse = this.radiusClient.authenticate(accessRequest, numRetries);
+            switch (accessResponse.getPacketType()) {
+                case RadiusPacket.ACCESS_ACCEPT:
                     //SUCCESS!!!!
                     break;
-                case RadiusClient.ACCESS_REJECT:
+                case RadiusPacket.ACCESS_REJECT:
                     throw new CredentialExpiredException("Incorrect User Name or Password.");
-                case RadiusClient.ACCESS_CHALLENGE:
+                case RadiusPacket.ACCESS_CHALLENGE:
                     if (this.challengedAttempts > RadiusLoginModule.MAX_CHALLENGE_ATTEMPTS) {
                         this.challengedAttempts = 0;
                         throw new LoginException("Maximum number of challenge retries exceeded.");
                     }
                     Callback[] callbacks = new Callback[1];
-                    callbacks[0] = new PasswordCallback(this.radiusClient.getChallengeMessage(),true);
+                    String password = null;
+                    callbacks[0] = new PasswordCallback(String.valueOf(accessResponse.getAttribute(RadiusAttributeValues.REPLY_MESSAGE).getValue()),true);
                     try {
                         this.callbackHandler.handle(callbacks);
-                        password = ((PasswordCallback)callbacks[0]).getPassword();
+                        password = String.valueOf(((PasswordCallback)callbacks[0]).getPassword());
                         if (password == null) {
                             //treat a null password as a zero length password
-                            password = new char[0];
+                            password = new String("");
                         }
                         //finally clear the password
                         ((PasswordCallback)callbacks[0]).clearPassword();
@@ -266,17 +246,14 @@ public class RadiusLoginModule implements LoginModule {
                     //do this first so that we are actually incrementing the BEFORE
                     //we get recursive
                     this.challengedAttempts++;
-                    this.authenticate(password, callingStationID, 1);
+                    RadiusPacket challengeResponse = new PapRadiusPacket(userName,String.valueOf(password));
+                    this.authenticate(challengeResponse, 1);
                     break;
                 default:
                     throw new LoginException("Received an Invalid response from the RADIUS Server.");
             }
         } catch(InvalidParameterException ivpex) {
             throw new LoginException(ivpex.getMessage());
-        } catch(UnknownHostException uhex) {
-            throw new LoginException(uhex.getMessage());
-        } catch(IOException ioex) {
-            throw new LoginException(ioex.getMessage());
         } catch(RadiusException rex) {
             throw new LoginException(rex.getMessage());
         }

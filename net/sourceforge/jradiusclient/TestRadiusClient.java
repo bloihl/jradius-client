@@ -3,17 +3,15 @@ package net.sourceforge.jradiusclient;
 import gnu.getopt.Getopt;
 import gnu.getopt.LongOpt;
 
-import java.io.BufferedInputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class TestRadiusClient{
     public static String getUsage(){

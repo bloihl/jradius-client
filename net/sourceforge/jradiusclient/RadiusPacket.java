@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -105,7 +105,7 @@ public class RadiusPacket {
         if (null == radiusAttribute){
             throw new InvalidParameterException("radiusAttribute was null");
         }
-        validateAttribute(tempRa);
+        validateAttribute(radiusAttribute);
         synchronized(this.attributes){
             this.attributes.put(new Integer(radiusAttribute.getType()),radiusAttribute);
         }
