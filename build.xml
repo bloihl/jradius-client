@@ -4,6 +4,7 @@
   <property name="build" value="classes" />
   <property name="dist"  value="dist" />
   <property name="doc"   value="docs" />
+  <property name="version"   value="0.9c" />
 
   <target name="prepare">
     <!-- Create the time stamp -->
@@ -26,6 +27,11 @@
 
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
     <jar jarfile="${dist}/jradius-client.jar" basedir="${build}" />
+    <!--
+    <copy LICENSE ${dist}/>
+    <copy README ${dist}/>
+    <tar flags="czf" name="jradius-client-${version}.tgz" basedir=${dist}/>
+    -->
   </target>
 
   <target name="doc">
