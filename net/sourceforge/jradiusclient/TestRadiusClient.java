@@ -6,7 +6,7 @@ import java.io.ByteArrayOutputStream;
 import net.sourceforge.jradiusclient.exception.*;
 /**
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.7 $
+ * @version $Revision: 1.8 $
  */
 public class TestRadiusClient{
     public static String getUsage(){
@@ -126,5 +126,51 @@ public class TestRadiusClient{
     {
         System.out.print  ("TestRadiusClient: ");
         System.out.println(message);
+    }
+
+    private void setSIPAttributes(RadiusClient rc, ByteArrayOutputStream reqAttributes) throws InvalidParameterException {
+        rc.setUserAttribute(RadiusClient.DIGEST_RESPONSE, "0c02a1cc5ec9a986aaa7232bb975faffa".getBytes(), reqAttributes);
+
+             rc.setUserSubAttribute(
+                 RadiusClient.DIGEST_ATTRIBUTE,
+                 RadiusClient.SIP_REALM,
+                 "buddyphone".getBytes(),
+                 reqAttributes
+             );
+
+             rc.setUserSubAttribute(
+                 RadiusClient.DIGEST_ATTRIBUTE,
+                 RadiusClient.SIP_USER_NAME,
+                 "koehler".getBytes(),
+                 reqAttributes
+             );
+
+             rc.setUserSubAttribute(
+                 RadiusClient.DIGEST_ATTRIBUTE,
+                 RadiusClient.SIP_NONCE,
+                 "1a80ff0a".getBytes(),
+                 reqAttributes
+             );
+
+             rc.setUserSubAttribute(
+                 RadiusClient.DIGEST_ATTRIBUTE,
+                 RadiusClient.SIP_URI,
+                 "sip:buddyphone.com:5060".getBytes(),
+                 reqAttributes
+             );
+
+             rc.setUserSubAttribute(
+                 RadiusClient.DIGEST_ATTRIBUTE,
+                 RadiusClient.SIP_METHOD,
+                 "REGISTER".getBytes(),
+                 reqAttributes
+             );
+
+             rc.setUserSubAttribute(
+                 RadiusClient.DIGEST_ATTRIBUTE,
+                 RadiusClient.SIP_ALGORITHM,
+                 "MD5".getBytes(),
+                 reqAttributes
+             );
     }
 }
