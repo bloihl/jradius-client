@@ -27,11 +27,10 @@
 
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
     <jar jarfile="${dist}/jradius-client.jar" basedir="${build}" />
-    <!--
-    <copy LICENSE ${dist}/>
-    <copy README ${dist}/>
-    <tar flags="czf" name="jradius-client-${version}.tgz" basedir=${dist}/>
-    -->
+    <copy file="LICENSE" todir="${dist}"/>
+    <copy file="README" todir="${dist}"/>
+    <tar tarfile="jradius-client-${version}.tar" basedir="${dist}"/>
+    <gzip zipfile="jradius-client-${version}.tar.gz" src="jradius-client-${version}.tar"/>
   </target>
 
   <target name="doc">
