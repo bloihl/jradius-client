@@ -1,6 +1,6 @@
 This is the jradius-client library. It is distributed under the LGPL (see the LICENSE file which should be included with this package).
 Usage:
 You can run the test client from the command line as follows
-java --classpath=$CLASSPATH:/path/to/jradius-client.jar net.sourceforge.jradiusclient.TestRadiusClient hostname authport acctport shared-secret username password
+java --classpath=$CLASSPATH:/path/to/jradius-client.jar net.sourceforge.jradiusclient.TestRadiusClient -s hostname --auth-port 8190  --acct-port 8191 -S shared-secret 
 where hostname is the name of the host running the Radius Server, authport is the port the authentication part of the RADIUS Server is running on and acctport is the port the accounting part of the Radius server is running on, the shared-secret is, of course the secret you share with the Radius server, and username and password had better be self-explanatory.
-
+Additionally you will need to be sure that java gnu getopt jar is in your classpath http://www.urbanophile.com/arenn/hacking/download.html
