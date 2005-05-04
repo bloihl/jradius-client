@@ -18,10 +18,15 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * This is an implementation of javax.security.auth.spi.LoginModule specific to
  * using a RADIUS Server for authentication.
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class RadiusLoginModule implements LoginModule {
 
+    public static final String OPTIONS_HOSTNAME = "hostName";
+    public static final String OPTIONS_SHARED_SECRET = "sharedSecret";
+    public static final String OPTIONS_AUTHENTICATION_PORT = "authPort";
+    public static final String OPTIONS_ACCOUNTING_PORT = "acctPort";
+    public static final String OPTIONS_NUMBER_RETRIES = "numRetries";
     public static final int MAX_CHALLENGE_ATTEMPTS = 3;
     //initial state variables
     private Subject radiusSubject;
@@ -36,6 +41,11 @@ public class RadiusLoginModule implements LoginModule {
     private RadiusPrincipal userPrincipal;
     private int challengedAttempts = 0;
     private RadiusClient radiusClient;
+    private String hostName;
+    private String sharedSecret;
+    private int authPort;
+    private int acctPort;
+    private int numRetries;
     /**
      * Method to abort the authentication process (phase 2). This method gets
      * called if the LoginContext's overall authentication process failed
@@ -126,6 +136,36 @@ public class RadiusLoginModule implements LoginModule {
         this.callbackHandler = callbackHandler;
         this.sharedState = sharedState;
         this.moduleOptions = options;
+        
+        String s = (String)moduleOptions.get(OPTIONS_HOSTNAME);
+        if (s != null)
+        {
+            hostName = s;
+        }
+        
+        s = (String)moduleOptions.get(OPTIONS_SHARED_SECRET);
+        if (s != null)
+        {
+            sharedSecret = s;
+        }
+        
+        s = (String)moduleOptions.get(OPTIONS_AUTHENTICATION_PORT);
+        if (s != null)
+        {
+            authPort = Integer.parseInt(s);
+        }
+        
+        s = (String)moduleOptions.get(OPTIONS_ACCOUNTING_PORT);
+        if (s != null)
+        {
+            acctPort = Integer.parseInt(s);
+        }
+        
+        s = (String)moduleOptions.get(OPTIONS_NUMBER_RETRIES);
+        if (s != null)
+        {
+            numRetries = Integer.parseInt(s);
+        }
     }
     /**
      * Authenticates this Subject against a RADIUS Server (phase 1). It uses
@@ -146,12 +186,10 @@ public class RadiusLoginModule implements LoginModule {
         // create callbacks
         NameCallback nameCallback = new NameCallback("User Name: ");
         PasswordCallback passwordCallback = new PasswordCallback("Password: ",true);//turn on password echo(?)
-        RadiusCallback radiusCallback = new RadiusCallback();
 
-        Callback[] callbacks = new Callback[3];
+        Callback[] callbacks = new Callback[2];
         callbacks[0] = nameCallback;
         callbacks[1] = passwordCallback;
-        callbacks[2] = radiusCallback;
 
         try {
             // send callbacks to callback handler
@@ -176,12 +214,9 @@ public class RadiusLoginModule implements LoginModule {
 
         //now authenticate
         try{
-            this.radiusClient = new RadiusClient(radiusCallback.getHostName(),
-                                                 radiusCallback.getAuthPort(),
-                                                 radiusCallback.getAcctPort(),
-                                                 radiusCallback.getSharedSecret());
+            this.radiusClient = new RadiusClient(hostName, authPort, acctPort, sharedSecret);
             RadiusPacket accessRequest = new PapAccessRequest(userName,String.valueOf(userPassword));
-            this.authenticate(accessRequest, radiusCallback.getNumRetries() );
+            this.authenticate(accessRequest, numRetries);
         }catch(InvalidParameterException ivpex){
             StringBuffer sb1 = new StringBuffer("Configuration of the RADIUS client is incorrect. ");
             sb1.append(ivpex.getMessage());
