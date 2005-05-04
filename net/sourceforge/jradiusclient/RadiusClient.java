@@ -46,7 +46,7 @@ import net.sourceforge.jradiusclient.exception.RadiusException;
  * for laying the groundwork for the development of this class.
  *
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.34 $
+ * @version $Revision: 1.35 $
  */
 public class RadiusClient
 {
@@ -142,7 +142,7 @@ public class RadiusClient
         this.setTimeout(sockTimeout);
         //set up the md5 engine
         try{
-        this.md5MessageDigest = MessageDigest.getInstance("MD5");
+            this.md5MessageDigest = MessageDigest.getInstance("MD5");
         }catch(NoSuchAlgorithmException nsaex){
             throw new RadiusException(nsaex.getMessage());
         }
@@ -204,24 +204,35 @@ public class RadiusClient
         // USER_NAME should be set as an attribute already
         //USER_PASSWORD may or may not be set
         try{
-            byte [] userPass = accessRequest.getAttribute(RadiusAttributeValues.USER_PASSWORD).getValue();
+            byte [] userPass = accessRequest.getAttribute(
+                    RadiusAttributeValues.USER_PASSWORD).getValue();
+            
             if(userPass.length > 0){//otherwise we don't add it to the Attributes
-                byte [] encryptedPass = this.encodePapPassword(userPass, requestAuthenticator);
+                byte [] encryptedPass = this.encodePapPassword(userPass, 
+                        requestAuthenticator);
                 //(encryptPass gives ArrayIndexOutOfBoundsException if password is of zero length)
-                accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.USER_PASSWORD, encryptedPass));
+                accessRequest.setAttribute(
+                        new RadiusAttribute( RadiusAttributeValues.USER_PASSWORD,
+                                encryptedPass ) );
             }
         }catch(RadiusException rex){
             //only thrown if there isn't a matching attribute justifiable to ignore
             //user needs to make sure he builds RadiusPackets correctly
         }
-        // Set the NAS-Identifier
-        accessRequest.setAttribute(new RadiusAttribute(RadiusAttributeValues.NAS_IDENTIFIER, RadiusClient.NAS_ID));
+        // Set the NAS-Identifier iff one has NOT already been set by in the radius packet
+        if( !accessRequest.hasAttribute(RadiusAttributeValues.NAS_IDENTIFIER) )
+        {
+            accessRequest.setAttribute(
+                    new RadiusAttribute( RadiusAttributeValues.NAS_IDENTIFIER, 
+                            RadiusClient.NAS_ID ) );
+        }
         // Length of Packet is computed as follows, 20 bytes (corresponding to
         // length of code + Identifier + Length + Request Authenticator) +
         // each attribute has a length computed as follows: 1 byte for the type +
         // 1 byte for the length of the attribute + length of attribute bytes
         byte[] requestAttributes = accessRequest.getAttributeBytes();
-        short length = (short) (RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.length );
+        short length = 
+            (short)( RadiusPacket.RADIUS_HEADER_LENGTH + requestAttributes.length );
 
         DatagramPacket packet =
             this.composeRadiusPacket(this.getAuthPort(), code, identifier, length, requestAuthenticator, requestAttributes);

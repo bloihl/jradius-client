@@ -13,7 +13,7 @@ import java.util.ArrayList;
 /**
  * Released under the LGPL<BR>
  * @author <a href="mailto:bloihl@users.sourceforge.net">Robert J. Loihl</a>
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class RadiusPacket {
     public static final int MIN_PACKET_LENGTH       = 20;
@@ -159,6 +159,22 @@ public class RadiusPacket {
             throw new RadiusException("No attribute found for type " +  attributeType);
         }
         return tempRa;
+    }
+    /**
+     * determine if this RadiusPacket contains at least one of this attribute
+     * type
+     * 
+     * @param attributeType the attribute type to check for should be 0<x<=256
+     * @return true if this RadiusPacket contains at least on of the attributes
+     */
+    public boolean hasAttribute(int attributeType)
+    {
+        boolean hasAttribute = false;
+
+        synchronized(this.attributes){
+            hasAttribute = this.attributes.containsKey(new Integer(attributeType));
+        }
+        return hasAttribute;
     }
     /**
      * get all of the RadiusAttributes in this RadiusPacket
